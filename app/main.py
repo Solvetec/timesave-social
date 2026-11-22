@@ -1934,7 +1934,7 @@ async def publish_tiktok(job,media,acc):
 
 
 async def poll_tiktok_pending():
-    threshold=(datetime.now(timezone.utc)-timedelta(seconds=90)).isoformat()
+    threshold=(datetime.now(timezone.utc)-timedelta(seconds=12)).isoformat()
     with dbconn() as db:
         pending=[dict(r) for r in db.execute("SELECT * FROM jobs WHERE platform='tiktok' AND status='awaiting_confirmation' AND (last_poll_at='' OR last_poll_at<?) ORDER BY due_at LIMIT 40",(threshold,))]
     for job in pending:
