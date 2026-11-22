@@ -155,7 +155,11 @@
               `<button class="outline tiny" type="button" onclick="downloadMedia('${escHtml(j.media_id)}')">Bild ↓</button>` +
               `<button class="outline tiny" type="button" onclick="jobAction('${escHtml(j.id)}','mark-published')">Erledigt ✓</button>`;
           } else if (j.status === 'needs_review') {
-            buttons = `<button class="danger tiny" type="button" onclick="jobAction('${escHtml(j.id)}','retry')">Erneut senden</button>`;
+            buttons =
+              `<button class="danger tiny" type="button" onclick="jobAction('${escHtml(j.id)}','retry')">Erneut senden</button>` +
+              `<button class="outline tiny" type="button" onclick="v196DeleteJob('${escHtml(j.id)}')">🗑️ Entfernen</button>`;
+          } else if (j.status === 'cancelled') {
+            buttons = `<button class="outline tiny" type="button" onclick="v196DeleteJob('${escHtml(j.id)}')">🗑️ Entfernen</button>`;
           }
 
           const pp = j.publication_progress;
@@ -254,6 +258,23 @@
       }
     });
   }
+
+
+  window.v196DeleteJob = async function (id) {
+    if (!confirm('Diesen Eintrag aus Planung & Archiv entfernen?')) return;
+    try {
+      if (typeof api === 'function') {
+        await api('/api/jobs/' + encodeURIComponent(id), { method: 'DELETE' });
+      } else {
+        const res = await fetch('/api/jobs/' + encodeURIComponent(id), { method: 'DELETE' });
+        if (!res.ok) throw new Error('Eintrag konnte nicht entfernt werden.');
+      }
+      if (typeof refresh === 'function') await refresh();
+      if (typeof toast === 'function') toast('Eintrag entfernt.');
+    } catch (e) {
+      if (typeof toast === 'function') toast(e.message || 'Fehler beim Entfernen.', true);
+    }
+  };
 
   function hookV192() {
     // Open filter drawer by default on desktop (> 900px), keep collapsed on mobile for minimal height

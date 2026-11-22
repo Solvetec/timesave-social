@@ -579,6 +579,8 @@ def tiktok_response(response):
         err={'code':str(err)}
     code=err.get('code','ok')
     if response.status_code>=400 or code not in ('ok', '', None):
+        if str(code) == 'app_version_check_failed':
+            raise RuntimeError('MANUAL: TikTok meldet eine veraltete App-Version oder blockiert den Foto-Direct-Post vor dem App-Audit (app_version_check_failed). Bitte TikTok-App auf dem Smartphone aktualisieren oder ein MP4-Video bzw. den Entwurf-Modus (TikTok-Inbox) verwenden.')
         label=err.get('message') or code or 'Anfrage abgelehnt'
         raise RuntimeError(f'TikTok API HTTP {response.status_code}: {str(label)[:240]} ({str(code)[:80]})')
     return body
@@ -4710,6 +4712,17 @@ def retry_job(ident:str, user: dict = Depends(current_user)):
                      (now(),ident,user['id']))
     if not r.rowcount:raise HTTPException(409,'Nur zu prüfende Veröffentlichungen erneut senden')
     return {'ok':True,'warning':'Vor erneuter Veröffentlichung prüfen, ob der vorherige Versuch doch erfolgreich war.'}
+
+@app.delete('/api/jobs/{ident}')
+def delete_job(ident:str, user: dict = Depends(current_user)):
+    with dbconn() as db:
+        r=db.execute(
+            "DELETE FROM jobs WHERE id=? AND owner_id=? AND status IN ('needs_review','cancelled','published','published_manual','manual')",
+            (ident,user['id'])
+        )
+    if not r.rowcount:
+        raise HTTPException(409,'Laufende oder geplante Veröffentlichungen bitte zuerst stornieren.')
+    return {'ok':True}
 
 @app.post('/api/jobs/{ident}/mark-published')
 def mark_job(ident:str, user: dict = Depends(current_user)):
