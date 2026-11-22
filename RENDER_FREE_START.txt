@@ -1,0 +1,42 @@
+SOLVETEC TIMESAVE SOCIAL V17.18 – RENDER FREE FUNKTIONSTEST
+======================================================
+WICHTIG: Dies ist ein TESTSERVER, kein zuverlässiger 24/7-Veröffentlichungsdienst.
+
+ÄNDERUNG GEGENÜBER V17.17
+- Keine künstliche Sperre mehr für Instagram/Telegram/TikTok/YouTube/Facebook.
+- Einmalig-Sonderweg in der Oberfläche entfernt; normaler Editor nutzt
+  wieder /api/plan und /api/plan/now für alle unterstützten Formate.
+- Tages-, Wochen-, Kalender- und Serienplanung wieder nutzbar.
+- Der vorhandene Scheduler läuft während der aktiven Render-Instanz.
+- Unter Einstellungen > Render kann der Scheduler bewusst pausiert werden.
+
+GRENZEN DES KOSTENLOSEN RENDER-WEBSERVICES (AUCH MIT UNSEREM UPDATE)
+- Dienst schläft nach ungefähr 15 Minuten ohne eingehende Requests ein.
+- Während des Schlafs läuft KEIN Python-Scheduler, daher werden fällige
+  Beiträge NICHT pünktlich veröffentlicht. Nach dem Aufwachen kann ein
+  verbliebener fälliger Job verarbeitet werden, falls seine Daten noch existieren.
+- Das lokale Dateisystem ist flüchtig. Bei Neustart/Deploy können Datenbank,
+  verschlüsselte Kontoverbindungen und Medien verloren gehen.
+- Keine Persistent Disk in Free. Das ist KEINE dauerhafte Datensicherung.
+- Geringe Ressourcen; Videoverarbeitung kann scheitern/abbrechen.
+- Echte Veröffentlichungen können sichtbar werden; bei unklarer API-Rückmeldung
+  bitte zuerst die Zielplattform prüfen, um Duplikate zu vermeiden.
+- Kein Import der produktiven Windows-Daten in den Free-Test (weiterhin gesperrt).
+
+UPDATE VIA GITHUB
+1. Vollständigen Inhalt dieser ZIP entpacken.
+2. Privates GitHub-Repository öffnen. Aktualisierte Dateien/Ordner (app/,
+   static/, render.yaml usw.) im Wurzelverzeichnis ersetzen und committen.
+3. KEINE .env, data/, .secret.key oder Tokens in GitHub hochladen.
+4. Render deployt den Commit. Bestehende Secrets/ADMIN_TOKEN in Environment
+   bleiben unverändert. Bei Render unter Deploys auf 'Live' prüfen.
+5. Im Browser Strg+F5. Unter Einstellungen > Render Status prüfen.
+6. Einen Testbeitrag anlegen, bewusst Termin oder 'Möglichst sofort' wählen.
+   Keine bereits geplanten identischen Beiträge aus Windows parallel schicken.
+
+LANGFRISTIG
+Fester, nicht einschlafender Server + persistenter Speicher + Backups +
+Job-Recovery/Monitoring sind weiterhin Voraussetzung für zuverlässige
+unbeaufsichtigte Wochenveröffentlichungen bei ausgeschaltetem PC.
+
+OFFIZIELLE INFOS: https://render.com/docs/free

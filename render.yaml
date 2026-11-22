@@ -1,0 +1,40 @@
+# TimeSave Social by Solvetec – Render Free Testumgebung
+# Keine garantierte Wochenplanung im Free-Tarif (Spin-down nach ~15 Min., keine Persistenz).
+# Fuer 24/7-Betrieb siehe render.persistent.example.yaml (Starter + Disk).
+services:
+  - type: web
+    name: timesave-social
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: frankfurt
+    healthCheckPath: /api/health
+    envVars:
+      - key: TIMESAVE_CLOUD_MODE
+        value: '1'
+      - key: TIMESAVE_FREE_PREVIEW
+        value: '1'
+      - key: TIMESAVE_PERSISTENT_STORAGE
+        value: '0'
+      - key: TIMESAVE_DATA_DIR
+        value: /tmp/timesave
+      - key: TIMESAVE_BRAND_NAME
+        value: TimeSave Social
+      - key: TIMESAVE_BRAND_SUBTITLE
+        value: BY SOLVETEC · V19.5
+      - key: TIMESAVE_OPERATOR_NAME
+        value: Solvetec
+      - key: TIMESAVE_CONTACT_EMAIL
+        value: support@rm-solvetec.de
+      - key: APP_TIMEZONE
+        value: Europe/Berlin
+      - key: TZ
+        value: Europe/Berlin
+      - key: ADMIN_TOKEN
+        sync: false
+
+# Optionale Secrets nur im Render Dashboard setzen (niemals in GitHub):
+# META_APP_ID, META_APP_SECRET, INSTAGRAM_UNIFIED_CONFIG_ID
+# GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+# TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET
+# TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID, TELEGRAM_BUSINESS_CONNECTION_ID

@@ -1,0 +1,5 @@
+/* TimeSave Social V15 · Layout polish & smooth scrollbars */
+[data-v17-hidden="true"]{display:none!important}
+dialog{max-height:92vh;overflow:auto}
+.card details summary{padding:2px 0}
+.card details[open] summary{margin-bottom:10px}

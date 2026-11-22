@@ -1,0 +1,43 @@
+# PRODUKTIV-VORLAGE fuer Render (Starter + Persistent Disk + optional PostgreSQL).
+# TimeSave Social by Solvetec
+services:
+  - type: web
+    name: timesave-social
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /api/health
+    disk:
+      name: timesave-data
+      mountPath: /var/data
+      sizeGB: 10
+    envVars:
+      - key: TIMESAVE_CLOUD_MODE
+        value: '1'
+      - key: TIMESAVE_FREE_PREVIEW
+        value: '0'
+      - key: TIMESAVE_PERSISTENT_STORAGE
+        value: '1'
+      - key: TIMESAVE_DATA_DIR
+        value: /var/data/timesave
+      - key: TIMESAVE_BRAND_NAME
+        value: TimeSave Social
+      - key: TIMESAVE_BRAND_SUBTITLE
+        value: BY SOLVETEC · V19.5
+      - key: TIMESAVE_OPERATOR_NAME
+        value: Solvetec
+      - key: TIMESAVE_CONTACT_EMAIL
+        value: support@rm-solvetec.de
+      - key: APP_TIMEZONE
+        value: Europe/Berlin
+      - key: TZ
+        value: Europe/Berlin
+      - key: ADMIN_TOKEN
+        sync: false
+      # Optional: PostgreSQL aktivieren (Render-Postgres / Neon / Supabase):
+      # - key: DATABASE_URL
+      #   sync: false
+      # Empfohlen bei PostgreSQL (einmalig erzeugter Fernet-Schluessel, niemals aendern!):
+      # - key: TIMESAVE_ENCRYPTION_KEY
+      #   sync: false

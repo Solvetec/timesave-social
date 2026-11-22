@@ -1,0 +1,28 @@
+/* Keep the existing theme; constrain intrinsic grid widths instead of clipping content. */
+#publish {container-type:inline-size;min-width:0}
+#publish .v17-pub-grid *, #accounts .connection *, #v17ReviewDialog * {min-width:0}
+#publish .v17-pub-grid, #publish .v17-col, #publish .v17-surface,
+#publish .v17-provider-card, #publish .v17-target-card, #publish .v171-send-panel {max-width:100%;grid-auto-columns:minmax(0,1fr)}
+#publish .v17-target-grid,#publish .v17-upload-pair,#publish .v17-defaults {grid-template-columns:repeat(2,minmax(0,1fr))}
+#publish .v17-provider-head,#publish .v17-selected-header,#v17ReviewDialog .v17-review-row {flex-wrap:wrap}
+#publish .v17-provider-head .pill {max-width:100%;white-space:normal}
+#publish .v17-flex > *,#publish .v17-schedule > *,#publish .v17-provider-btns > *,#publish .v17-mini-actions > *,#accounts .connection .row > * {max-width:100%;white-space:normal;overflow-wrap:anywhere}
+#publish .v17-pub-grid :is(p,small,strong,label,button,legend),#accounts .connection,#v17ReviewDialog .v17-review-row {overflow-wrap:anywhere}
+#publish .v17-target-grid select,#publish #v17Due,#publish .v17-media-filter select {width:100%;min-width:0;max-width:100%}
+#publish .v17-media-filter select {flex:1 1 125px;width:auto}
+#publish .v17-media-filter input {flex:1 1 150px}
+#publish .v17-pub-grid [hidden],#accounts [hidden] {display:none!important}
+#accounts .connections {grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr))}
+#accounts .connection {min-width:0;max-width:100%}
+#accounts .connection .spread>*,#accounts .connection .row>* {min-width:0;max-width:100%}
+#accounts details summary {cursor:pointer;overflow-wrap:anywhere}
+#accounts details[open] summary {margin-bottom:12px}
+@container (max-width: 1080px) {
+  #publish .v17-pub-grid {grid-template-columns:minmax(0,1fr)}
+}
+@container (max-width: 520px) {
+  #publish .v17-provider-grid,#publish .v17-target-grid,#publish .v17-defaults,#publish .v17-upload-pair {grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:680px){
+  #publish .v17-provider-grid,#publish .v17-target-grid,#publish .v17-defaults,#publish .v17-upload-pair {grid-template-columns:minmax(0,1fr)}
+}

@@ -1,0 +1,6 @@
+/* TimeSave Social V17.9 · Video background mode & draggable text overlay */
+.v179-bg-panel,.v179-position-panel{padding:13px 14px;border-radius:14px;border:1px solid #e9def4;background:#faf7ff;margin:12px 0}
+.v179-bg-panel strong,.v179-position-panel strong{display:block;font-size:13.5px;color:#342254;margin-bottom:4px}
+.v179-share-tip{font-size:12.5px;color:#584972;margin:0;line-height:1.5}
+#v9PreviewOverlay{cursor:grab;user-select:none;touch-action:none}
+#v9PreviewOverlay:active{cursor:grabbing}

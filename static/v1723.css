@@ -1,0 +1,12 @@
+/* TimeSave Social V17.23 · Storage, Backup & Drafts */
+.v1723-storage{display:grid;gap:12px}
+.v1723-stats{display:flex;gap:8px;flex-wrap:wrap}
+.v1723-restore{padding:13px 14px;border-radius:14px;border:1px dashed #d3bee9;background:#faf7ff;display:grid;gap:8px}
+.v1723-restore label{margin:0}
+.v1723-draftbar{margin:10px 0;padding:13px;border-radius:15px;border:1px solid #e8dcf5;background:#faf7ff;display:grid;gap:8px}
+.v1723-draftbar input{width:100%}
+.v1723-textbutton{background:transparent;color:#673fb5;box-shadow:none;padding:7px 10px;font-size:12.5px;min-height:34px}
+.v1723-drafts{display:grid;gap:10px;margin-top:12px}
+.v1723-draft-card{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px;border-radius:15px;border:1px solid #e9def4;background:#fcfaff}
+.v1723-draft-card strong{display:block;font-size:15px;color:#2d1e48}
+.v1723-draft-card small{color:#716784}

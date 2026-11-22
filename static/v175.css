@@ -1,0 +1,26 @@
+/* TimeSave Social V17.5 · Tagesmappen / Storys zum Teilen */
+.v175-nav-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;border-radius:99px;background:#f4c97d;color:#271544;font-size:11px;font-weight:900;margin-left:6px}
+.v175-inline-cta{margin-top:12px;padding:12px 15px;border-radius:14px;background:#eefaf3;border:1px solid #c4e9d3;color:#20573a;font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.v175-toolhead{margin-bottom:12px}
+.v175-datecontrols{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px}
+.v175-datecontrols label{margin:0}
+.v175-datecontrols input,.v175-datecontrols select{display:block;margin-top:5px}
+.v175-quickstats{padding:11px 14px;border-radius:13px;background:#f7f2fe;border:1px solid #e6d8f6;color:#4a336f;font-size:13px;font-weight:650;margin-bottom:12px}
+.v175-daybar{display:flex;gap:8px;overflow:auto;padding:4px 2px 8px}
+.v175-daybtn{flex:0 0 auto;display:grid;gap:2px;text-align:center;min-width:96px;padding:9px 11px;border-radius:13px;background:#faf7ff;color:#483666;border:1px solid #e7dcf4;box-shadow:none;font-size:12px}
+.v175-daybtn.selected{background:linear-gradient(115deg,#6f49c6,#9e57d3);color:#fff;border-color:transparent}
+.v175-daybtn small{font-size:10.5px;opacity:.85}
+.v175-head-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.v1721-advanced{margin:0;padding:8px 12px}
+.v175-list{display:grid;gap:12px;margin-top:12px}
+.v175-card{display:grid;grid-template-columns:92px minmax(0,1fr);gap:14px;padding:14px;border:1px solid #e9dff3;border-radius:17px;background:#fcfaff;align-items:start}
+.v175-card-thumb{width:92px;height:122px;border-radius:11px;overflow:hidden;background:#201633;display:grid;place-items:center;color:#e5d8f6;font-size:12px}
+.v175-card-thumb img{width:100%;height:100%;object-fit:cover}
+.v175-card-body{display:grid;gap:8px;min-width:0}
+.v175-card-caption{margin:0;padding:9px 11px;border-radius:10px;background:#fff;border:1px solid #ece4f4;font-size:12.5px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:110px;overflow:auto}
+.v175-card-actions{display:flex;gap:7px;flex-wrap:wrap}
+.v175-card-actions button{min-height:34px;padding:7px 11px;font-size:12px}
+.v175-checks{display:flex;gap:14px;flex-wrap:wrap;padding-top:4px}
+.v175-checks label{display:flex;align-items:center;gap:7px;margin:0;font-size:12.5px;cursor:pointer}
+.v175-disclaimer{padding:14px 16px;border-radius:15px;background:#faf7ff;border:1px solid #e7dcf4;font-size:12.5px;line-height:1.6;color:#5a4d71}
+@media(max-width:640px){.v175-card{grid-template-columns:1fr}.v175-card-thumb{width:100%;height:160px}}

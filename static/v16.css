@@ -1,0 +1,11 @@
+/* TimeSave Social V16 · Telegram Business Profile Stories */
+.v16-business-card{border:1.5px solid #d5e6fb;background:linear-gradient(150deg,#fff,#f6faff)}
+.v16-guide{display:grid;gap:10px;margin:10px 0}
+.v16-guide>div{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:11px;background:#fff;border:1px solid #e5ecf7;font-size:13px;line-height:1.55}
+.v16-guide b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#e4f0ff;color:#2164b0;flex-shrink:0}
+.v16-connect-controls{display:grid;gap:10px;margin:12px 0}
+.v16-connect-controls select{width:100%}
+.v16-connection-feedback{padding:11px 14px;border-radius:12px;background:#f3f7fc;border:1px solid #dde8f6;font-size:13px;color:#354e6b;line-height:1.55;margin:10px 0}
+#v16StoryChoices{display:grid;gap:10px;margin:12px 0;padding:13px;border-radius:13px;background:#edf9f2;border:1px solid #bde6ce}
+#v16StoryChoices select{width:100%}
+.v16-footnote{margin-top:12px}

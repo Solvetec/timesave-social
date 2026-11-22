@@ -1,0 +1,11 @@
+/* TimeSave Social V17.12 · Service Health Panels, Quickbars & Safe Guides */
+.v1712-service-panel{border:1px solid #e4d9f3}
+.v1712-health-info{margin:12px 0 6px;padding:11px 13px;border-radius:12px;background:#f8f4fe;border:1px solid #e8dcf5;font-size:13px;color:#483666;line-height:1.5}
+.v1712-health-results{display:grid;gap:8px;margin-top:8px}
+.v1712-health-item{padding:10px 12px;border-radius:11px;border:1px solid #e7dcf4;background:#fff;font-size:12.5px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.v1712-quickbar,.v1712-shortcuts{margin:12px 0;padding:12px 13px;border-radius:13px;background:#f9f5ff;border:1px solid #e9def5}
+.v1712-quickbar strong,.v1712-shortcuts strong{display:block;font-size:13px;color:#3c285e;margin-bottom:6px}
+.v1712-quick-actions{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px}
+.v1712-safe-toggle{margin-top:10px;padding:9px 12px;border-radius:12px;background:#ffffff12;color:#e8dbf7;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.v1712-safe-toggle label{display:flex;align-items:center;gap:7px;margin:0;color:#fff;cursor:pointer}
+.video-preview-frame.show-safe-guides::after{content:"";position:absolute;inset:12% 7% 16% 7%;border:2px dashed #ffe6a8cc;border-radius:8px;pointer-events:none;z-index:6}

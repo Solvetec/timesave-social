@@ -1,0 +1,47 @@
+/* TimeSave Social V7 — plum + lilac editorial design, accessible controls */
+:root{--violet:#6745c5;--border:#e5ddf0;--card:#fff;--muted:#69617c}
+body{background:linear-gradient(125deg,#fcfbff 0,#f6f0fb 50%,#f7f5ff 100%)}
+.sidebar{background:linear-gradient(165deg,#161327 0%,#2c1d49 65%,#392353 100%);box-shadow:7px 0 38px #22153b14}
+.brand{letter-spacing:-1.25px}.side-sub{color:#c1b1d0;letter-spacing:.03em}.nav{transition:background .15s,transform .15s}.nav:hover{transform:translateX(2px)}
+.nav.active{background:linear-gradient(100deg,#7b58c7,#6745b6);box-shadow:0 8px 22px #12082245}
+.main{max-width:1700px;padding:28px clamp(16px,3vw,48px) 70px}
+.top{padding:3px 0 13px;border-bottom:1px solid #e5dceb}
+.top h1{font-size:clamp(24px,2.4vw,33px);color:#24193b}
+.card{border-color:#e9e2f3;border-radius:20px;box-shadow:0 9px 30px #42235f0b}
+.card h2,.page-intro h2{color:#2b2144}.page-intro{margin-bottom:20px}
+.card:focus-within{border-color:#d6c8eb}
+button{background:linear-gradient(105deg,#7351cb,#6340ae);box-shadow:0 4px 13px #42286c18}
+button.outline,button.danger,button.tiny{box-shadow:none}
+input,select,textarea{background:#fff;border:1px solid #ded6eb;outline:none;accent-color:#6e48be}
+input:focus,select:focus,textarea:focus{border-color:#936ddc;box-shadow:0 0 0 3px #8a64d41b}
+input[type=color]{width:100%;height:45px;padding:3px;cursor:pointer}
+input[type=range]{padding:0;cursor:pointer;border:0;background:transparent}
+.full{width:100%}
+.studio-layout{display:grid;grid-template-columns:minmax(320px,.9fr) minmax(350px,1.1fr);gap:22px;align-items:start}
+.studio-preview-card{position:sticky;top:20px}
+.canvas-holder{height:min(70vh,640px);min-height:320px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 25%,#503b75,#211832 74%);border-radius:19px;padding:18px;overflow:hidden}
+#studioCanvas{width:auto;max-width:100%;max-height:100%;display:block;object-fit:contain;box-shadow:0 16px 52px #0d071f70;touch-action:none;cursor:grab;border-radius:5px}
+#studioCanvas:active{cursor:grabbing}
+.studio-control-card{padding:28px}.studio-control-card .fields{margin:10px 0 15px;grid-template-columns:1fr 1fr}
+.studio-control-card .fields select{width:100%}.studio-control-card textarea{min-height:96px;line-height:1.5}
+.studio-actions{margin-top:20px}.studio-actions button{flex:1;white-space:normal}
+.story-studio-promo{background:linear-gradient(125deg,#fdf9ff,#f4edff);border-color:#e6d7f9}
+.composer-selection{margin:10px 0}.composer-mini{min-width:82px;width:82px;height:112px;border-radius:11px;border:1px solid #ded3e9;background:#f5effb;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.composer-mini img{width:100%;height:100%;object-fit:contain}.composer-mini img[hidden]{display:none}
+.bulk-card{background:linear-gradient(145deg,#fff,#faf8ff)}
+.calendar-days{max-height:800px;overflow:auto;scrollbar-color:#bca5e9 #f7f3fb;padding-right:8px}
+.calendar-day{margin:10px 0;background:#fff;border:1px solid #e7dfed;border-radius:13px;padding:12px}
+.calendar-day.ready{border-color:#a1ddbc}.calendar-day summary{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;list-style:none}
+.calendar-day summary::-webkit-details-marker{display:none}
+.calendar-day-state{margin-left:auto;padding:5px 10px;border-radius:99px;background:#f3eff8;color:#5c4f78}
+.calendar-day.ready .calendar-day-state{background:#def7e7;color:#21784b}
+.calendar-slot{display:grid;grid-template-columns:32px minmax(180px,1fr) minmax(200px,1fr);gap:12px;align-items:end;border-bottom:1px solid #f0ebf4;padding:12px 0}
+.calendar-slot:last-child{border-bottom:0}.calendar-slot select,.calendar-slot input{width:100%}.slot-bubble{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#ece5fc;color:#7046bd;font-weight:800;margin-bottom:6px}
+.queue-filters{margin:15px 0}.queue-filters label{margin:0}.queue-filters select,.queue-filters input{margin-left:8px}
+#jobRows td:last-child .row{min-width:150px;gap:6px}
+.job-dialog{width:min(580px,calc(100vw - 24px));border:1px solid #d4c9e9;border-radius:20px;padding:25px;color:#332848;box-shadow:0 35px 75px #110a3250}
+.job-dialog::backdrop{background:#100b1b9c;backdrop-filter:blur(3px)}
+.job-dialog .fields{margin:12px 0 16px}
+#toast{max-width:min(550px,calc(100vw - 32px))}
+@media(max-width:1050px){.studio-layout{grid-template-columns:1fr}.studio-preview-card{position:static}.canvas-holder{height:min(66vh,600px)}}
+@media(max-width:720px){.studio-control-card{padding:18px}.canvas-holder{height:450px;min-height:250px}.calendar-slot{grid-template-columns:30px 1fr}.calendar-slot>div:last-child{grid-column:2}.calendar-day summary{font-size:12px}.queue-filters label{width:100%}.queue-filters select,.queue-filters input{width:100%;margin:6px 0}.job-dialog .fields{grid-template-columns:1fr}}

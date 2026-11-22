@@ -1,0 +1,16 @@
+/* TimeSave Social V17.8 · Direct Native Share Dialog & Publisher Video Notes */
+.v178-pub-notes{display:grid;gap:6px;padding:11px 13px;border-radius:13px;background:#faf7ff;border:1px solid #ebe0f5;font-size:12px;color:#5a4d72;line-height:1.5;margin-bottom:10px}
+.v178-dialog{width:min(500px,calc(100vw - 24px));border:1px solid #e1d3f3;border-radius:22px;padding:0;background:#fff;color:#271d3c;box-shadow:0 28px 80px #160c2d66}
+.v178-dialog::backdrop{background:#180e2fa3;backdrop-filter:blur(4px)}
+.v178-d-inner{padding:22px;display:grid;gap:12px}
+.v178-d-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.v178-d-eyebrow{display:block;font-size:10px;letter-spacing:1.5px;font-weight:850;color:#8c63be}
+.v178-d-top h3{margin:3px 0 0;font-size:20px;color:#2a1b46}
+.v178-x{background:#f2eafc;color:#5b3d8e;box-shadow:none;min-height:36px;padding:6px 11px;border-radius:10px}
+.v178-media{display:flex;gap:12px;align-items:center;padding:10px;border-radius:14px;background:#faf7ff;border:1px solid #ebe0f4}
+.v178-media img{width:64px;height:82px;object-fit:cover;border-radius:9px;background:#201633;flex-shrink:0}
+.v178-media strong{display:block;font-size:13.5px;overflow-wrap:anywhere}
+.v178-d-status{padding:10px 12px;border-radius:11px;background:#f4eefc;color:#4f357a;font-size:12.5px;font-weight:650}
+.v178-btns{display:grid;gap:8px}
+.v178-secondary{background:#f2eafc;color:#593a8c;box-shadow:none}
+.v178-notice{font-size:11.5px;color:#716784;line-height:1.5;margin:0}
