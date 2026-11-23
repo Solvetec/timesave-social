@@ -5508,6 +5508,33 @@ app.include_router(_create_v19_router({
 }))
 
 
+@app.get('/manifest.webmanifest')
+def pwa_manifest():
+    return FileResponse(
+        ROOT / 'static' / 'manifest.webmanifest',
+        media_type='application/manifest+json',
+        headers={'Cache-Control': 'public, max-age=3600'},
+    )
+
+
+@app.get('/sw.js')
+def pwa_service_worker():
+    return FileResponse(
+        ROOT / 'static' / 'sw.js',
+        media_type='application/javascript',
+        headers={'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/'},
+    )
+
+
+@app.get('/apple-touch-icon.png')
+def pwa_apple_touch_icon():
+    return FileResponse(
+        ROOT / 'static' / 'icons' / 'apple-touch-icon.png',
+        media_type='image/png',
+        headers={'Cache-Control': 'public, max-age=86400'},
+    )
+
+
 @app.api_route('/public/{filename}', methods=['GET', 'HEAD'])
 def tiktok_public_verify_file(request: Request, filename: str):
     vresp = _tiktok_verify_response(filename, head_only=(request.method == 'HEAD'))
