@@ -1,4 +1,4 @@
-/* TimeSave Social V19.7 – Direktaufnahme von Fotos & Videos in die Mediathek */
+/* TimeSave Social V19.9 – Zuverlässiges 9:16-Format am Handy & direkte Kamera-Buttons */
 .v197-cam-card {
   margin-bottom: 14px;
   border: 1px solid #e3daf5;
@@ -27,9 +27,8 @@
 }
 .v197-cam-video {
   width: 100%;
-  max-height: 440px;
+  height: 100%;
   display: block;
-  object-fit: contain;
   background: #0e0b1a;
 }
 .v197-cam-video.is-mirrored {
@@ -78,7 +77,7 @@
   border-top: 1px solid #2b2248;
 }
 .v197-cam-bar button {
-  min-height: 38px;
+  min-height: 40px;
   padding: 8px 13px;
   font-size: 13px;
 }
@@ -88,31 +87,55 @@
   color: #554b6b;
 }
 .v197-native-fallback {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px dashed #dfd6f2;
 }
 .v197-native-btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 7px 11px;
-  border-radius: 10px;
+  padding: 10px 12px;
+  border-radius: 11px;
   background: #efe9fb;
   color: #4c368f;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 0;
+  text-align: center;
+}
+.v197-native-btn:hover {
+  filter: brightness(0.97);
+}
+.v197-inline-cam-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.v197-inline-cam-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: #f3ecff;
+  border: 1px solid #d8c8f7;
+  color: #4b328b;
   font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
   margin: 0;
 }
-.v197-native-btn:hover {
-  filter: brightness(0.97);
-}
-@media (max-width: 720px) {
-  .v197-cam-video {
-    max-height: 360px;
+@media (max-width: 600px) {
+  .v197-native-fallback,
+  .v197-inline-cam-row {
+    grid-template-columns: 1fr;
   }
 }
