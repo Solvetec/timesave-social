@@ -1945,17 +1945,21 @@ async def poll_tiktok_pending():
                 raise RuntimeError('TikTok Status-ID oder Konto fehlt')
             acc=get_account(job['connection_id'])
             state,reason=await tiktok_publish_status(acc,job['publish_id'])
-            if state=='PUBLISH_COMPLETE':
-                status='published';message='TikTok hat Veröffentlichung bestätigt: '+job['publish_id']
-            elif state=='SEND_TO_USER_INBOX':
-                status='published';message='In TikTok-Inbox angekommen (dort Musik wählen & veröffentlichen): '+job['publish_id']
-            elif state=='FAILED':
-                status='needs_review';message='TikTok-Veröffentlichung fehlgeschlagen: '+reason[:180]
+            norm_state=(state or '').strip().upper()
+            if norm_state=='PUBLISH_COMPLETE':
+                status='published';message='TikTok hat Veröffentlichung bestätigt ('+norm_state+'): '+job['publish_id']
+            elif norm_state=='SEND_TO_USER_INBOX':
+                status='published';message='TikTok hat Entwurf an Inbox übergeben ('+norm_state+'): '+job['publish_id']
+            elif norm_state=='FAILED':
+                status='needs_review';message='TikTok-Veröffentlichung fehlgeschlagen: '+(reason or norm_state)[:180]
             else:
-                status='awaiting_confirmation';message='TikTok verarbeitet Beitrag: '+state[:60]
+                state_label = norm_state or 'PROCESSING'
+                status='awaiting_confirmation'
+                message=f'TikTok verarbeitet noch ({state_label}) – erst bei endgültiger TikTok-Bestätigung wird auf Veröffentlicht gesetzt.'
         except Exception as exc:
-            # Never retry an uncertain publication; leave it pending and show safe error.
-            status='awaiting_confirmation';message='TikTok-Status konnte nicht geprüft werden: '+type(exc).__name__
+            # Never mark as published while TikTok status is pending or uncertain.
+            status='awaiting_confirmation'
+            message='TikTok verarbeitet noch / Statusabfrage läuft weiter ('+type(exc).__name__+').'
         with dbconn() as db:
             db.execute("UPDATE jobs SET status=?,result=?,published_at=?,last_poll_at=? WHERE id=? AND status='awaiting_confirmation'",
                 (status,message,now() if status=='published' else None,now(),job['id']))

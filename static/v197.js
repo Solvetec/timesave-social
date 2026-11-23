@@ -1,4 +1,4 @@
-/* TimeSave Social V19.7 – Fotos & Videos direkt in der App aufnehmen und in der Mediathek speichern */
+/* TimeSave Social V19.8 – Saubere Kamera-Ausrichtung (9:16 / 1:1 / 16:9 + Waage/Raster) & exakter TikTok-Status */
 (function () {
   'use strict';
 
@@ -10,11 +10,12 @@
     chunks: [],
     mode: 'photo', // 'photo' | 'video'
     facingMode: 'environment', // 'environment' | 'user'
+    aspect: 'auto', // 'auto' | '9:16' | '1:1' | '16:9'
+    showGrid: true,
     recording: false,
     timerId: null,
     startedAt: 0,
     busy: false,
-    autoSelectForPublish: false,
   };
 
   function notify(msg, isError) {
@@ -53,8 +54,30 @@
       camState.stream = null;
     }
     const vid = byId('v197CamVideo');
-    if (vid) {
-      vid.srcObject = null;
+    if (vid) vid.srcObject = null;
+  }
+
+  function applyStageAspect() {
+    const frameBox = byId('v197CamFrameBox');
+    const gridEl = byId('v197CamGrid');
+    if (gridEl) gridEl.hidden = !camState.showGrid;
+    if (!frameBox) return;
+    if (camState.aspect === '9:16') {
+      frameBox.style.aspectRatio = '9 / 16';
+      frameBox.style.maxWidth = '340px';
+      frameBox.style.margin = '10px auto';
+    } else if (camState.aspect === '1:1') {
+      frameBox.style.aspectRatio = '1 / 1';
+      frameBox.style.maxWidth = '420px';
+      frameBox.style.margin = '10px auto';
+    } else if (camState.aspect === '16:9') {
+      frameBox.style.aspectRatio = '16 / 9';
+      frameBox.style.maxWidth = '640px';
+      frameBox.style.margin = '10px auto';
+    } else {
+      frameBox.style.aspectRatio = '';
+      frameBox.style.maxWidth = '100%';
+      frameBox.style.margin = '10px 0 0';
     }
   }
 
@@ -69,10 +92,16 @@
 
     if (stage) stage.hidden = !camState.stream;
     if (vid) vid.classList.toggle('is-mirrored', camState.facingMode === 'user');
+    applyStageAspect();
+
     if (modeLabel) {
+      const aspTxt = camState.aspect === 'auto' ? 'Gerät' : camState.aspect;
       modeLabel.textContent =
-        (camState.mode === 'video' ? '🎬 Video-Kamera' : '📸 Foto-Kamera') +
-        (camState.facingMode === 'user' ? ' (Frontkamera)' : ' (Rückkamera)');
+        (camState.mode === 'video' ? '🎬 Video' : '📸 Foto') +
+        ' · ' +
+        (camState.facingMode === 'user' ? 'Front' : 'Rückkamera') +
+        ' · ' +
+        aspTxt;
     }
     if (recPill) recPill.hidden = !camState.recording;
     if (snapBtn) {
@@ -89,39 +118,62 @@
     }
   }
 
-  async function openCamera(mode, opts) {
+  function buildVideoConstraints() {
+    const base = { facingMode: { ideal: camState.facingMode } };
+    if (camState.aspect === '9:16') {
+      base.width = { ideal: 720 };
+      base.height = { ideal: 1280 };
+      base.aspectRatio = { ideal: 9 / 16 };
+    } else if (camState.aspect === '1:1') {
+      base.width = { ideal: 1080 };
+      base.height = { ideal: 1080 };
+      base.aspectRatio = { ideal: 1 };
+    } else if (camState.aspect === '16:9') {
+      base.width = { ideal: 1280 };
+      base.height = { ideal: 720 };
+      base.aspectRatio = { ideal: 16 / 9 };
+    } else {
+      base.width = { ideal: 1280 };
+      base.height = { ideal: 720 };
+    }
+    return base;
+  }
+
+  async function openCamera(mode) {
     if (camState.recording) {
       notify('Bitte zuerst die laufende Videoaufnahme stoppen.', true);
       return;
     }
     camState.mode = mode === 'video' ? 'video' : 'photo';
-    if (opts && typeof opts.autoSelectForPublish === 'boolean') {
-      camState.autoSelectForPublish = opts.autoSelectForPublish;
-    }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      notify('Live-Kamera wird in diesem Browser nicht direkt unterstützt. Nutze unten die Handy-Kamera-Buttons.', true);
+      notify('Live-Kamera wird in diesem Browser nicht direkt unterstützt. Nutze unten die Geräte-Kamera.', true);
       return;
     }
     stopStream();
-    notify('⏳ Kamera wird gestartet …');
+    notify('⏳ Kamera wird ausgerichtet und gestartet …');
     try {
-      const constraints = {
-        video: {
-          facingMode: { ideal: camState.facingMode },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: camState.mode === 'video',
-      };
+      const vConstraints = buildVideoConstraints();
       let stream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (err) {
-        if (camState.mode === 'video') {
-          // Fallback without audio if no microphone is attached on desktop
-          stream = await navigator.mediaDevices.getUserMedia({ video: constraints.video, audio: false });
-        } else {
-          throw err;
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: vConstraints,
+          audio: camState.mode === 'video',
+        });
+      } catch (_) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: camState.facingMode } },
+            audio: camState.mode === 'video',
+          });
+        } catch (err2) {
+          if (camState.mode === 'video') {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: { ideal: camState.facingMode } },
+              audio: false,
+            });
+          } else {
+            throw err2;
+          }
         }
       }
       camState.stream = stream;
@@ -131,15 +183,11 @@
         await vid.play().catch(() => {});
       }
       syncCamUi();
-      notify(
-        camState.mode === 'video'
-          ? 'Kamera bereit. Tippe auf „● Aufnahme starten“, um ein Video für die Mediathek aufzunehmen.'
-          : 'Kamera bereit. Tippe auf „📸 Foto aufnehmen“, um das Bild direkt in der Mediathek zu speichern.'
-      );
+      notify('Kamera bereit – nutze die Wasserwaage-/Rasterlinien und das Format (9:16 / 1:1 / 16:9) für gerade Aufnahmen.');
     } catch (err) {
       stopStream();
       syncCamUi();
-      notify('Kamera konnte nicht geöffnet werden (' + (err.name || err.message || 'Berechtigung prüfen') + '). Nutze unten alternativ die Geräte-Kamera.', true);
+      notify('Kamera konnte nicht geöffnet werden (' + (err.name || err.message || 'Berechtigung prüfen') + ').', true);
     }
   }
 
@@ -147,6 +195,8 @@
     camState.facingMode = camState.facingMode === 'environment' ? 'user' : 'environment';
     if (camState.stream) {
       await openCamera(camState.mode);
+    } else {
+      syncCamUi();
     }
   }
 
@@ -154,6 +204,41 @@
     stopStream();
     syncCamUi();
     notify('Kamera geschlossen.');
+  }
+
+  function computeCroppedRect(srcW, srcH, aspectMode) {
+    if (!aspectMode || aspectMode === 'auto') {
+      return { sx: 0, sy: 0, sw: srcW, sh: srcH, dw: srcW, dh: srcH };
+    }
+    let targetRatio = srcW / srcH;
+    let dw = srcW;
+    let dh = srcH;
+    if (aspectMode === '9:16') {
+      targetRatio = 9 / 16;
+      dw = 720;
+      dh = 1280;
+    } else if (aspectMode === '1:1') {
+      targetRatio = 1;
+      dw = 1080;
+      dh = 1080;
+    } else if (aspectMode === '16:9') {
+      targetRatio = 16 / 9;
+      dw = 1280;
+      dh = 720;
+    }
+    const srcRatio = srcW / srcH;
+    let sw = srcW;
+    let sh = srcH;
+    let sx = 0;
+    let sy = 0;
+    if (srcRatio > targetRatio) {
+      sw = Math.round(srcH * targetRatio);
+      sx = Math.round((srcW - sw) / 2);
+    } else if (srcRatio < targetRatio) {
+      sh = Math.round(srcW / targetRatio);
+      sy = Math.round((srcH - sh) / 2);
+    }
+    return { sx, sy, sw, sh, dw, dh };
   }
 
   async function uploadCapturedFile(file, kind) {
@@ -189,7 +274,7 @@
         if (typeof v17UpdateDefaultsUI === 'function') v17UpdateDefaultsUI();
         if (typeof v17RenderAssets === 'function') v17RenderAssets();
       }
-      notify('✓ ' + (kind === 'video' ? 'Video' : 'Foto') + ' direkt in der Mediathek gespeichert!');
+      notify('✓ ' + (kind === 'video' ? 'Video' : 'Foto') + ' in der Mediathek gespeichert!');
     } catch (err) {
       notify('Fehler beim Speichern: ' + (err.message || err), true);
     } finally {
@@ -201,17 +286,20 @@
   async function takePhoto() {
     const vid = byId('v197CamVideo');
     if (!vid || !camState.stream || camState.busy) return;
-    const w = vid.videoWidth || 1280;
-    const h = vid.videoHeight || 720;
+    const srcW = vid.videoWidth || 1280;
+    const srcH = vid.videoHeight || 720;
+    const rect = computeCroppedRect(srcW, srcH, camState.aspect);
+
     const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
+    canvas.width = rect.dw;
+    canvas.height = rect.dh;
     const ctx = canvas.getContext('2d');
     if (camState.facingMode === 'user') {
-      ctx.translate(w, 0);
+      ctx.translate(rect.dw, 0);
       ctx.scale(-1, 1);
     }
-    ctx.drawImage(vid, 0, 0, w, h);
+    ctx.drawImage(vid, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, rect.dw, rect.dh);
+
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
     if (!blob) {
       notify('Foto konnte nicht erzeugt werden.', true);
@@ -238,21 +326,57 @@
   }
 
   function startVideoRecording() {
-    if (!camState.stream || camState.recording || camState.busy) return;
+    const vid = byId('v197CamVideo');
+    if (!camState.stream || camState.recording || camState.busy || !vid) return;
     if (typeof MediaRecorder === 'undefined') {
       notify('Videoaufnahme wird in diesem Browser nicht direkt unterstützt. Nutze unten den Video-Kamera-Button.', true);
       return;
     }
+
+    const srcW = vid.videoWidth || 1280;
+    const srcH = vid.videoHeight || 720;
+    const rect = computeCroppedRect(srcW, srcH, camState.aspect);
+
+    let captureStream = camState.stream;
+    let rafId = null;
+
+    // Render straight, properly framed video onto a canvas so orientation/aspect is never crooked
+    if (typeof HTMLCanvasElement.prototype.captureStream === 'function') {
+      const canvas = document.createElement('canvas');
+      canvas.width = rect.dw;
+      canvas.height = rect.dh;
+      const ctx = canvas.getContext('2d');
+
+      const drawFrame = () => {
+        if (!camState.recording) return;
+        ctx.save();
+        if (camState.facingMode === 'user') {
+          ctx.translate(rect.dw, 0);
+          ctx.scale(-1, 1);
+        }
+        ctx.drawImage(vid, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, rect.dw, rect.dh);
+        ctx.restore();
+        rafId = requestAnimationFrame(drawFrame);
+      };
+
+      const vStream = canvas.captureStream(25);
+      const combinedTracks = [...vStream.getVideoTracks(), ...camState.stream.getAudioTracks()];
+      captureStream = new MediaStream(combinedTracks);
+      camState.recording = true;
+      drawFrame();
+    } else {
+      camState.recording = true;
+    }
+
     camState.chunks = [];
     const mime = pickRecorderMime();
     let recorder;
     try {
-      recorder = mime ? new MediaRecorder(camState.stream, { mimeType: mime }) : new MediaRecorder(camState.stream);
+      recorder = mime ? new MediaRecorder(captureStream, { mimeType: mime }) : new MediaRecorder(captureStream);
     } catch (_) {
-      recorder = new MediaRecorder(camState.stream);
+      recorder = new MediaRecorder(captureStream);
     }
     camState.recorder = recorder;
-    camState.recording = true;
     camState.startedAt = Date.now();
 
     recorder.ondataavailable = (ev) => {
@@ -260,6 +384,7 @@
     };
 
     recorder.onstop = async () => {
+      if (rafId) cancelAnimationFrame(rafId);
       stopTimer();
       camState.recording = false;
       syncCamUi();
@@ -284,7 +409,7 @@
       if (timerEl) timerEl.textContent = formatTimer(sec);
     }, 300);
     syncCamUi();
-    notify('● Aufnahme läuft … Tippe auf „⏹ Stopp & in Mediathek speichern“.');
+    notify('● Gerade Aufnahme läuft … Tippe auf „⏹ Stopp & in Mediathek speichern“.');
   }
 
   function stopVideoRecording() {
@@ -313,8 +438,17 @@
       '<div class="v197-cam-head">' +
       '<div>' +
       '<span class="v17-kicker">DIREKTAUFNAHME · KAMERA</span>' +
-      '<h3>📸 Foto &amp; Video direkt aufnehmen</h3>' +
-      '<p class="v17-caption" style="margin:2px 0 0;">Nimm Bilder oder Videos direkt über deine Kamera auf – sie werden automatisch als JPG bzw. MP4 in deiner Mediathek gespeichert.</p>' +
+      '<h3>📸 Foto &amp; Video gerade &amp; passend aufnehmen</h3>' +
+      '<p class="v17-caption" style="margin:2px 0 0;">Wähle das Zielformat (9:16 Hochformat, 1:1 oder 16:9) und nutze das Ausrichtungsraster – die Aufnahme wird gerade ausgerichtet in der Mediathek gespeichert.</p>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+      '<label style="margin:0;font-size:12px;">Format: <select id="v197CamAspect" style="padding:6px 8px;border-radius:8px;">' +
+      '<option value="9:16" selected>9:16 Hochformat (TikTok/Reels)</option>' +
+      '<option value="1:1">1:1 Quadrat</option>' +
+      '<option value="16:9">16:9 Querformat</option>' +
+      '<option value="auto">Gerät (unbeschnitten)</option>' +
+      '</select></label>' +
+      '<label style="margin:0;font-size:12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="v197CamGridToggle" checked/> Raster / Waage</label>' +
       '</div>' +
       '</div>' +
       '<div class="v197-cam-actions">' +
@@ -323,10 +457,13 @@
       '</div>' +
       '<div class="v197-cam-stage" id="v197CamStage" hidden>' +
       '<div class="v197-cam-hud">' +
-      '<span id="v197CamModeLabel">📸 Foto-Kamera</span>' +
+      '<span id="v197CamModeLabel">📸 Foto · Rückkamera · 9:16</span>' +
       '<span class="v197-cam-rec-pill" id="v197CamRecPill" hidden><span class="v197-cam-rec-dot"></span> REC <span id="v197CamTimer">00:00</span></span>' +
       '</div>' +
-      '<video class="v197-cam-video" id="v197CamVideo" autoplay playsinline muted></video>' +
+      '<div id="v197CamFrameBox" style="position:relative;overflow:hidden;background:#0e0b1a;">' +
+      '<video class="v197-cam-video" id="v197CamVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;"></video>' +
+      '<div id="v197CamGrid" style="pointer-events:none;position:absolute;inset:0;border:1px solid rgba(255,255,255,0.22);background-image:linear-gradient(to right, rgba(255,255,255,0.16) 1px, transparent 1px),linear-gradient(to bottom, rgba(255,255,255,0.16) 1px, transparent 1px);background-size:33.33% 33.33%;"></div>' +
+      '</div>' +
       '<div class="v197-cam-bar">' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
       '<button type="button" id="v197CamSnapBtn">📸 Foto aufnehmen &amp; speichern</button>' +
@@ -343,9 +480,24 @@
       '<label class="v197-native-btn" for="v197NativePhotoInput">📱 Geräte-Kamera: Foto<input id="v197NativePhotoInput" type="file" accept="image/*" capture="environment" hidden/></label>' +
       '<label class="v197-native-btn" for="v197NativeVideoInput">📱 Geräte-Kamera: Video<input id="v197NativeVideoInput" type="file" accept="video/*" capture="environment" hidden/></label>' +
       '</div>' +
-      '<div class="v197-cam-status" id="v197CamStatus" role="status" aria-live="polite">Bereit für Foto- oder Videoaufnahme.</div>';
+      '<div class="v197-cam-status" id="v197CamStatus" role="status" aria-live="polite">Bereit · Status in Planung &amp; Archiv wechselt erst auf „Veröffentlicht“, wenn TikTok den Abschluss bestätigt.</div>';
 
     firstSurface.parentNode.insertBefore(card, firstSurface);
+    camState.aspect = byId('v197CamAspect')?.value || '9:16';
+    camState.showGrid = !!byId('v197CamGridToggle')?.checked;
+    applyStageAspect();
+
+    byId('v197CamAspect')?.addEventListener('change', async (e) => {
+      camState.aspect = e.target.value || '9:16';
+      syncCamUi();
+      if (camState.stream && !camState.recording) {
+        await openCamera(camState.mode);
+      }
+    });
+    byId('v197CamGridToggle')?.addEventListener('change', (e) => {
+      camState.showGrid = !!e.target.checked;
+      applyStageAspect();
+    });
 
     byId('v197OpenPhotoCamBtn')?.addEventListener('click', () => openCamera('photo'));
     byId('v197OpenVideoCamBtn')?.addEventListener('click', () => openCamera('video'));
@@ -357,7 +509,6 @@
     byId('v197NativePhotoInput')?.addEventListener('change', (e) => handleNativeCaptureInput(e.target, 'image'));
     byId('v197NativeVideoInput')?.addEventListener('change', (e) => handleNativeCaptureInput(e.target, 'video'));
 
-    // Also add a convenient shortcut button inside the Publish section's upload bar
     const pubUploadBtn = byId('v17Upload');
     if (pubUploadBtn && !byId('v197PublishCamJumpBtn')) {
       const jumpBtn = document.createElement('button');
