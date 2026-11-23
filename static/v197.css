@@ -1,0 +1,118 @@
+/* TimeSave Social V19.7 – Direktaufnahme von Fotos & Videos in die Mediathek */
+.v197-cam-card {
+  margin-bottom: 14px;
+  border: 1px solid #e3daf5;
+  background: linear-gradient(180deg, #fcfaff 0%, #f7f3ff 100%);
+}
+.v197-cam-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.v197-cam-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.v197-cam-stage {
+  margin-top: 12px;
+  background: #141024;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #2e244d;
+  position: relative;
+}
+.v197-cam-video {
+  width: 100%;
+  max-height: 440px;
+  display: block;
+  object-fit: contain;
+  background: #0e0b1a;
+}
+.v197-cam-video.is-mirrored {
+  transform: scaleX(-1);
+}
+.v197-cam-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: #1c1633;
+  color: #f3effd;
+  font-size: 12.5px;
+}
+.v197-cam-rec-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #3a1929;
+  color: #ff9bb3;
+  font-weight: 700;
+}
+.v197-cam-rec-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff3b6b;
+  animation: v197Pulse 1s infinite;
+}
+@keyframes v197Pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.v197-cam-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: #18132b;
+  border-top: 1px solid #2b2248;
+}
+.v197-cam-bar button {
+  min-height: 38px;
+  padding: 8px 13px;
+  font-size: 13px;
+}
+.v197-cam-status {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: #554b6b;
+}
+.v197-native-fallback {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #dfd6f2;
+}
+.v197-native-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border-radius: 10px;
+  background: #efe9fb;
+  color: #4c368f;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 0;
+}
+.v197-native-btn:hover {
+  filter: brightness(0.97);
+}
+@media (max-width: 720px) {
+  .v197-cam-video {
+    max-height: 360px;
+  }
+}

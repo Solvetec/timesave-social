@@ -3611,17 +3611,31 @@ async def upload_media(file: UploadFile = File(...),
     Only the compressed MP4 enters the existing media table. This keeps the
     publisher, planning, story reminders and encrypted user data unchanged.
     """
-    mime = 'image/jpeg' if file.content_type == 'image/jpg' else file.content_type
-    if mime not in ('image/png', 'image/jpeg', 'video/mp4'):
-        raise HTTPException(400, 'Nur JPG, PNG oder MP4 erlaubt')
-    upper_bound = MAX_VIDEO_IMPORT if mime == 'video/mp4' else MAX_IMAGE
+    raw_ct = (file.content_type or '').split(';', 1)[0].strip().lower()
+    raw_ext = Path(file.filename or '').suffix.lower()
+    if raw_ct in ('image/jpg', 'image/jpeg') or raw_ext in ('.jpg', '.jpeg'):
+        mime = 'image/jpeg'
+    elif raw_ct == 'image/png' or raw_ext == '.png':
+        mime = 'image/png'
+    elif raw_ct == 'image/webp' or raw_ext == '.webp':
+        mime = 'image/webp'
+    elif raw_ct == 'video/mp4' or raw_ext == '.mp4':
+        mime = 'video/mp4'
+    elif raw_ct in ('video/webm', 'video/quicktime', 'video/x-matroska') or raw_ext in ('.webm', '.mov', '.mkv'):
+        mime = 'video/webm'
+    else:
+        raise HTTPException(400, 'Nur JPG, PNG, WebP, MP4, WebM oder MOV erlaubt')
+    is_image = mime in ('image/png', 'image/jpeg', 'image/webp')
+    upper_bound = MAX_IMAGE if is_image else MAX_VIDEO_IMPORT
     total = 0
     ident = uuid.uuid4().hex
-    ext = {'image/png':'.png', 'image/jpeg':'.jpg', 'video/mp4':'.mp4'}[mime]
+    target_mime = 'image/jpeg' if mime == 'image/webp' else ('video/mp4' if mime == 'video/webm' else mime)
+    ext = {'image/png':'.png', 'image/jpeg':'.jpg', 'video/mp4':'.mp4'}[target_mime]
+    in_ext = {'image/png':'.png', 'image/jpeg':'.jpg', 'image/webp':'.webp', 'video/mp4':'.mp4', 'video/webm':'.webm'}[mime]
     final_path = MEDIA / (ident + ext)
     optimized = False
     with tempfile.TemporaryDirectory(prefix='.import_', dir=MEDIA) as temp:
-        staged = Path(temp) / ('eingang' + ext)
+        staged = Path(temp) / ('eingang' + in_ext)
         # Never buffer the entire incoming video in Python memory.
         with staged.open('wb') as output:
             while block := await file.read(4 * 1024 * 1024):
@@ -3631,17 +3645,42 @@ async def upload_media(file: UploadFile = File(...),
                 output.write(block)
         if not total:
             raise HTTPException(400, 'Leere Datei')
-        if mime in ('image/jpeg','image/png'):
+        if is_image:
             try:
                 with Image.open(staged) as pic:
                     pic.verify()
                 with Image.open(staged) as pic:
-                    if pic.format != ('JPEG' if mime == 'image/jpeg' else 'PNG'):
-                        raise ValueError('Bildformat stimmt nicht')
                     if pic.width * pic.height > 50_000_000:
                         raise ValueError('Bildauflösung zu groß')
+                    if mime == 'image/webp':
+                        jpg_path = Path(temp) / 'eingang.jpg'
+                        pic.convert('RGB').save(jpg_path, format='JPEG', quality=92, optimize=True)
+                        staged = jpg_path
+                    elif pic.format != ('JPEG' if target_mime == 'image/jpeg' else 'PNG'):
+                        raise ValueError('Bildformat stimmt nicht')
             except Exception:
                 raise HTTPException(400, 'Beschädigte oder ungültige Bilddatei') from None
+        elif mime == 'video/webm':
+            exe = _find_ffmpeg('Kamera-Video-Konvertierung (WebM/MOV -> MP4) benötigt FFmpeg.')
+            mp4_path = Path(temp) / 'kamera.mp4'
+            cmd = [
+                exe, '-nostdin', '-hide_banner', '-loglevel', 'error', '-y',
+                *_ffmpeg_thread_args(), '-i', str(staged),
+                '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p',
+                '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+                '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart',
+                str(mp4_path)
+            ]
+            res = await asyncio.to_thread(_run_ffmpeg, cmd, timeout=240, capture_output=True, text=True)
+            if res.returncode != 0 or not mp4_path.is_file() or mp4_path.stat().st_size == 0:
+                raise HTTPException(400, 'Kamera-Video konnte nicht in MP4 umgewandelt werden.')
+            staged = mp4_path
+            optimized = True
+            if staged.stat().st_size > MAX_VIDEO:
+                optimized_path = Path(temp) / 'optimiert.mp4'
+                await asyncio.to_thread(_compress_import_video, staged, optimized_path,
+                                        MAX_VIDEO, min(VIDEO_TARGET_BYTES, int(MAX_VIDEO * 0.90)))
+                staged = optimized_path
         else:
             with staged.open('rb') as stream:
                 if b'ftyp' not in stream.read(32):
@@ -3654,6 +3693,7 @@ async def upload_media(file: UploadFile = File(...),
                                         MAX_VIDEO, min(VIDEO_TARGET_BYTES, int(MAX_VIDEO * 0.90)))
                 staged = optimized_path
                 optimized = True
+        mime = target_mime
         stored_size = staged.stat().st_size
         if stored_size > (MAX_VIDEO if mime == 'video/mp4' else MAX_IMAGE):
             raise HTTPException(413, 'Die Datei überschreitet das Veröffentlichungs-Limit.')
@@ -3662,7 +3702,7 @@ async def upload_media(file: UploadFile = File(...),
     try:
         with dbconn() as db:
             db.execute('INSERT INTO media(id,filename,original_name,mime,created_at,owner_id) VALUES(?,?,?,?,?,?)',
-                       (ident, final_path.name, Path(file.filename or 'Medien').name[:180], mime, now(), user['id']))
+                       (ident, final_path.name, (Path(file.filename or 'Medien').stem + ext)[:180], mime, now(), user['id']))
     except Exception:
         final_path.unlink(missing_ok=True)
         raise
