@@ -1,4 +1,4 @@
-/* TimeSave Social V19.9 – Zuverlässiges 9:16-Format am Handy & direkte Kamera-Buttons */
+/* TimeSave Social V20.0 – PC & Handy Kamera-Auswahl, 9:16-Format & 1-Klick Direkt-Bearbeitung */
 .v197-cam-card {
   margin-bottom: 14px;
   border: 1px solid #e3daf5;
@@ -6,16 +6,50 @@
 }
 .v197-cam-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
+}
+.v197-cam-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+  background: #ffffff;
+  border: 1px solid #e7dff7;
+  border-radius: 12px;
+}
+.v197-cam-controls-grid label {
+  margin: 0;
+  font-size: 12px;
+  color: #4f446b;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.v197-cam-controls-grid select {
+  padding: 7px 9px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  width: 100%;
 }
 .v197-cam-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
   margin-top: 10px;
+}
+.v197-cam-auto-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 0 auto;
+  font-size: 12.5px;
+  color: #4c3b7a;
+  cursor: pointer;
 }
 .v197-cam-stage {
   margin-top: 12px;
@@ -30,9 +64,6 @@
   height: 100%;
   display: block;
   background: #0e0b1a;
-}
-.v197-cam-video.is-mirrored {
-  transform: scaleX(-1);
 }
 .v197-cam-hud {
   display: flex;
@@ -81,33 +112,59 @@
   padding: 8px 13px;
   font-size: 13px;
 }
+.v197-cam-result {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #eefaf3;
+  border: 1px solid #bfe6ce;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.v197-cam-result[hidden] {
+  display: none !important;
+}
+.v197-cam-result-info {
+  font-size: 13px;
+  color: #1c5c39;
+}
+.v197-cam-result-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .v197-cam-status {
   margin-top: 8px;
   font-size: 12.5px;
   color: #554b6b;
 }
 .v197-native-fallback {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
   margin-top: 10px;
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 1px dashed #dfd6f2;
+  font-size: 12px;
+  color: #6b5f85;
 }
 .v197-native-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px 12px;
-  border-radius: 11px;
+  padding: 7px 11px;
+  border-radius: 10px;
   background: #efe9fb;
   color: #4c368f;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
   margin: 0;
-  text-align: center;
 }
 .v197-native-btn:hover {
   filter: brightness(0.97);
@@ -133,9 +190,14 @@
   cursor: pointer;
   margin: 0;
 }
+.v197-inline-cam-btn:hover {
+  filter: brightness(0.97);
+}
 @media (max-width: 600px) {
-  .v197-native-fallback,
   .v197-inline-cam-row {
     grid-template-columns: 1fr;
+  }
+  .v197-cam-auto-open {
+    margin-left: 0;
   }
 }
