@@ -111,3 +111,24 @@
   #dashboard .grid .stat{min-height:0;align-content:center}
   .main [id]{scroll-margin-top:80px}
 }
+
+/* TimeSave Social V20.5 – Nur ein klares Menü (kein doppeltes Menü) mit schnellen Aktionstasten im Menü */
+.v205-menu-quick {
+  display: none;
+}
+@media (max-width: 860px) {
+  .v205-menu-quick {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 4px 6px 10px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .v205-menu-quick button {
+    min-height: 38px !important;
+    padding: 7px 9px !important;
+    font-size: 12px !important;
+    border-radius: 10px !important;
+  }
+}

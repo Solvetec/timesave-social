@@ -1,5 +1,5 @@
 /* TimeSave Social V20.3 – PWA Service Worker (Network-First, OAuth/API-sicher) */
-const CACHE_NAME = 'timesave-social-shell-v20.4';
+const CACHE_NAME = 'timesave-social-shell-v20.5';
 const SHELL_ASSETS = [
   '/manifest.webmanifest?v=20.3',
   '/static/icons/icon-192.png?v=20.3',

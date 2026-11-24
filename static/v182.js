@@ -49,6 +49,27 @@
   }
   const previousLogout = v1725Logout;
   v1725Logout = function() { setOpen(false); return previousLogout(); };
+
+  if (navigation && !document.getElementById('v205MenuQuick')) {
+    const q = document.createElement('div');
+    q.id = 'v205MenuQuick';
+    q.className = 'v205-menu-quick';
+    q.innerHTML =
+      '<button type="button" id="v205QPhoto">📸 Foto aufnehmen</button>' +
+      '<button type="button" class="outline" id="v205QVideo">🎬 Video aufnehmen</button>';
+    navigation.insertBefore(q, navigation.firstChild);
+    document.getElementById('v205QPhoto')?.addEventListener('click', () => {
+      setOpen(false);
+      if (typeof window.v197OpenCamera === 'function') window.v197OpenCamera('photo');
+      else if (typeof nav === 'function') nav('mediaHub');
+    });
+    document.getElementById('v205QVideo')?.addEventListener('click', () => {
+      setOpen(false);
+      if (typeof window.v197OpenCamera === 'function') window.v197OpenCamera('video');
+      else if (typeof nav === 'function') nav('mediaHub');
+    });
+  }
+
   setOpen(false);
 })();
 
