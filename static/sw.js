@@ -1,10 +1,10 @@
-/* TimeSave Social V20.1 – PWA Service Worker (Network-First, OAuth/API-sicher) */
-const CACHE_NAME = 'timesave-social-shell-v20.2';
+/* TimeSave Social V20.3 – PWA Service Worker (Network-First, OAuth/API-sicher) */
+const CACHE_NAME = 'timesave-social-shell-v20.3';
 const SHELL_ASSETS = [
-  '/manifest.webmanifest',
-  '/static/icons/icon-192.png',
-  '/static/icons/icon-512.png',
-  '/static/icons/apple-touch-icon.png'
+  '/manifest.webmanifest?v=20.3',
+  '/static/icons/icon-192.png?v=20.3',
+  '/static/icons/icon-512.png?v=20.3',
+  '/static/icons/apple-touch-icon.png?v=20.3'
 ];
 
 self.addEventListener('install', (event) => {
@@ -29,7 +29,6 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // Never intercept API, OAuth callbacks, legal pages, or public media / verification files
   if (
     url.pathname.startsWith('/api/') ||
     url.pathname.startsWith('/oauth/') ||
@@ -39,7 +38,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for HTML & static assets so Render deploys are always immediately visible
   event.respondWith(
     fetch(req).catch(() => caches.match(req))
   );

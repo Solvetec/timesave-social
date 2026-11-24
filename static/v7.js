@@ -96,9 +96,11 @@ function paintStudio(forExport=false){
   ctx.fillStyle='#1b162c';ctx.fillRect(0,0,w,h);
   const img=studioImage;
   const look=$('studioLook')?.value||'original';
-  const looks={original:'none',vivid:'saturate(1.38) contrast(1.07)',warm:'sepia(.23) saturate(1.20) brightness(1.07)',cool:'hue-rotate(12deg) saturate(1.15)',mono:'grayscale(1) contrast(1.07)'};
+  const looks={original:'',clean:'contrast(1.07) saturate(1.16) brightness(1.03)',vivid:'saturate(1.38) contrast(1.07)',warm:'sepia(.23) saturate(1.20) brightness(1.07)',cinema:'contrast(1.18) saturate(.92) brightness(.97)',soft:'brightness(1.08) contrast(.94) saturate(1.06)',cool:'hue-rotate(12deg) saturate(1.15)',mono:'grayscale(1) contrast(1.10)'};
+  const v203Fine = (typeof window.v203StudioFilterString === 'function') ? window.v203StudioFilterString() : '';
+  const combinedFilter = [looks[look]||'', v203Fine].filter(Boolean).join(' ') || 'none';
   if(img){
-    ctx.filter=looks[look]||'none';
+    ctx.filter=combinedFilter;
     const coverScale=Math.max(w/img.width,h/img.height);
     const containScale=Math.min(w/img.width,h/img.height);
     const drawScaled=(scale)=>{
@@ -115,6 +117,14 @@ function paintStudio(forExport=false){
     ctx.fillText('Wähle ein Bild aus dem Fundus',w/2,h/2);
   }
   ctx.filter='none';
+  const v203Vig = Number($('v203Vignette')?.value || 0);
+  if(v203Vig > 0){
+    const vg = ctx.createRadialGradient(w/2, h/2, Math.min(w,h)*0.28, w/2, h/2, Math.max(w,h)*0.72);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(8,12,26,' + (v203Vig/100 * 0.72).toFixed(3) + ')');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, w, h);
+  }
   const tint=$('studioTint')?.value||'none';
   const tints={violet:['rgba(40,17,79,0)','rgba(70,26,116,.48)'],rose:['rgba(100,21,91,0)','rgba(134,42,93,.36)'],gold:['rgba(74,30,3,0)','rgba(182,97,18,.29)'],teal:['rgba(9,53,56,0)','rgba(4,115,110,.34)']};
   if(tints[tint]){const g=ctx.createLinearGradient(0,h*.16,0,h);g.addColorStop(0,tints[tint][0]);g.addColorStop(1,tints[tint][1]);ctx.fillStyle=g;ctx.fillRect(0,0,w,h)}

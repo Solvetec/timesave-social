@@ -1,0 +1,106 @@
+/* TimeSave Social V20.3 – Studio Ästhetik, Sticky Live-Vorschau, 1-Klick-Looks & Licht/Farbe Feinregler */
+@media (min-width: 980px) {
+  #studio .studio-preview-card,
+  #videoStudio .v177-preview-panel {
+    position: sticky;
+    top: 18px;
+    align-self: start;
+  }
+}
+
+#studio .studio-preview-card,
+#videoStudio .v177-preview-panel {
+  border: 1px solid #dcd5ee;
+  box-shadow: 0 12px 32px rgba(10, 33, 84, 0.07);
+}
+
+#studio .canvas-holder {
+  background: radial-gradient(circle at top, #132554 0%, #090e20 80%);
+  border-radius: 16px;
+  padding: 12px;
+  border: 1px solid rgba(229, 190, 103, 0.25);
+}
+
+.v203-panel {
+  margin: 12px 0;
+  padding: 13px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fbfaff 0%, #f5f2fc 100%);
+  border: 1px solid #e2daf3;
+}
+.v203-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.v203-panel-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #162b5c;
+}
+.v203-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.v203-look-chip {
+  background: #ffffff;
+  color: #2f2648;
+  border: 1px solid #d9d0ec;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+.v203-look-chip:hover {
+  border-color: #6846bc;
+  background: #f5f0ff;
+}
+.v203-look-chip.active {
+  background: linear-gradient(135deg, #0a2154 0%, #1d3f8a 100%);
+  color: #ffe9b3;
+  border-color: #d8ae4e;
+  box-shadow: 0 4px 12px rgba(10, 33, 84, 0.2);
+}
+
+.v203-sliders {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 10px 14px;
+  margin-top: 10px;
+}
+.v203-slider-row label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3a3154;
+}
+.v203-slider-row output {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #0f2c6e;
+  background: #eae4f7;
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+.v203-slider-row input[type="range"] {
+  width: 100%;
+  accent-color: #0a2154;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.v203-reset-btn {
+  padding: 4px 9px;
+  font-size: 11.5px;
+  border-radius: 8px;
+}
