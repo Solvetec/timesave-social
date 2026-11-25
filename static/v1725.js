@@ -250,7 +250,7 @@ function v1725AccountTab(tab) {
 }
 
 function v189FilterAccounts() {
-  const groups = {meta:['facebook','instagram'], telegram:['telegram','telegram_story'], tiktok:['tiktok','youtube']};
+  const groups = {meta:['facebook','instagram','threads'], telegram:['telegram','telegram_story'], tiktok:['tiktok','youtube','linkedin']};
   const allowed=groups[v1725ActiveAccountTab];
   document.querySelectorAll('#connectionCards > .connection').forEach(card=>card.classList.toggle('v1725-hidden', !!allowed && !allowed.includes(card.dataset.provider)));
 }
@@ -265,7 +265,7 @@ function v1725InitSettingsBadges() {
     if (text.includes('Unified Login') || text.includes('Facebook')) {
       badge.className = 'v1725-badge main';
       badge.textContent = 'Empfohlen';
-    } else if (text.includes('YouTube') || text.includes('TikTok')) {
+    } else if (text.includes('YouTube') || text.includes('TikTok') || text.includes('Threads') || text.includes('LinkedIn')) {
       badge.className = 'v1725-badge opt';
       badge.textContent = 'Optional';
     } else {

@@ -6,6 +6,8 @@ const v10State = Object.create(null);
 const v10MediaFormats = {
   facebook: {image:[['story','Story · Foto'],['post','Beitrag · Foto']],video:[['story','Story · Video'],['post','Beitrag · Video'],['reel','Reel · Video']]},
   instagram:{image:[['story','Story · Foto'],['post','Feed · Foto']],video:[['story','Story · Video'],['reel','Reel · Video']]},
+  threads:  {image:[['post','Threads · Bildbeitrag']],video:[['reel','Threads · 9:16 Video']]},
+  linkedin: {image:[['post','LinkedIn · Bildbeitrag']],video:[['video','LinkedIn · 9:16 / Feed-Video']]},
   telegram: {image:[['post','Kanalbeitrag · Bild']],video:[['post','Kanalbeitrag · Video']]},
   telegram_story:{image:[['story','Profil-Story · Bild (automatisch)']],video:[['story','Profil-Story · Video (automatisch)']]},
   tiktok:   {image:[['post','Fotobeitrag · Bild']],video:[['video','TikTok-Video · MP4']]},
@@ -16,7 +18,7 @@ const v10MediaFormats = {
 const v10DefaultKind={tiktok:'video',youtube:'video'};
 // Independent defaults: selecting a new image must not destroy the chosen video and vice versa.
 const v11SourceDefaults={image:'',video:''};
-const v10Labels={facebook:'Facebook',instagram:'Instagram',telegram:'Telegram-Kanal',telegram_story:'Telegram-Profil-Story',tiktok:'TikTok',youtube:'YouTube',whatsapp:'WhatsApp-Status',whatsapp_channel:'WhatsApp-Kanal'};
+const v10Labels={facebook:'Facebook',instagram:'Instagram',threads:'Threads',linkedin:'LinkedIn',telegram:'Telegram-Kanal',telegram_story:'Telegram-Profil-Story',tiktok:'TikTok',youtube:'YouTube',whatsapp:'WhatsApp-Status',whatsapp_channel:'WhatsApp-Kanal'};
 let v10PendingPlan=null, v10Busy=false;
 
 const v10OriginalRenderTargetGroup=renderTargetGroup;

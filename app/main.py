@@ -204,10 +204,10 @@ def _cleanup_stale_files() -> None:
                     item.unlink(missing_ok=True)
             except OSError:
                 pass
-PROVIDERS = ['facebook','instagram','telegram','telegram_story','youtube','tiktok','whatsapp','whatsapp_channel']
+PROVIDERS = ['facebook','instagram','threads','linkedin','telegram','telegram_story','youtube','tiktok','whatsapp','whatsapp_channel']
 FORMATS = ['story','post','reel','video']
-SECRET_FIELDS = {'meta_app_secret','instagram_app_secret','google_client_secret','tiktok_client_secret'}
-SETTINGS_ALLOWED = SECRET_FIELDS | {'meta_app_id','instagram_app_id','instagram_redirect_uri','google_client_id','tiktok_client_key','public_base_url','gcs_bucket_name','tiktok_redirect_uri','tiktok_verified_media_prefix','tiktok_verify_filename','tiktok_verify_content','instagram_unified_config_id'}
+SECRET_FIELDS = {'meta_app_secret','instagram_app_secret','threads_app_secret','linkedin_client_secret','google_client_secret','tiktok_client_secret'}
+SETTINGS_ALLOWED = SECRET_FIELDS | {'meta_app_id','instagram_app_id','instagram_redirect_uri','threads_app_id','threads_redirect_uri','linkedin_client_id','linkedin_redirect_uri','google_client_id','tiktok_client_key','public_base_url','gcs_bucket_name','tiktok_redirect_uri','tiktok_verified_media_prefix','tiktok_verify_filename','tiktok_verify_content','instagram_unified_config_id'}
 
 
 def now():
@@ -554,6 +554,16 @@ def callback_url(provider):
                 ((public_base() + '/oauth/instagram/callback') if public_base() else ''))
     if provider == 'instagram_unified':
         return ((public_base() + '/oauth/instagram_unified/callback') if public_base() else '')
+    if provider == 'threads':
+        saved = setting('threads_redirect_uri')
+        if CLOUD_MODE and saved and urlsplit(saved).hostname in ('localhost', '127.0.0.1'):
+            saved = ''
+        return saved or ((public_base() or 'http://localhost:8000') + '/oauth/threads/callback')
+    if provider == 'linkedin':
+        saved = setting('linkedin_redirect_uri')
+        if CLOUD_MODE and saved and urlsplit(saved).hostname in ('localhost', '127.0.0.1'):
+            saved = ''
+        return saved or ((public_base() or 'http://localhost:8000') + '/oauth/linkedin/callback')
     return (public_base() or 'http://localhost:8000') + '/oauth/' + provider + '/callback'
 
 
@@ -2002,6 +2012,260 @@ async def poll_facebook_video_pending():
                 (status,message,now() if status=='published' else None,now(),job['id']))
 
 
+
+
+THREADS_GRAPH = 'https://graph.threads.net/v1.0'
+THREADS_OAUTH_TOKEN = 'https://graph.threads.net/oauth/access_token'
+THREADS_LONG_TOKEN = 'https://graph.threads.net/access_token'
+THREADS_REFRESH_TOKEN = 'https://graph.threads.net/refresh_access_token'
+
+
+def _threads_app_credentials():
+    app_id = (setting('threads_app_id') or setting('meta_app_id') or '').strip()
+    app_secret = (setting('threads_app_secret') or setting('meta_app_secret') or '').strip()
+    return app_id, app_secret
+
+
+async def threads_exchange_code(client: httpx.AsyncClient, code: str, redirect: str):
+    app_id, app_secret = _threads_app_credentials()
+    if not app_id or not app_secret:
+        raise RuntimeError('Threads App-ID oder App Secret fehlt.')
+    short_resp = await client.post(THREADS_OAUTH_TOKEN, data={
+        'client_id': app_id,
+        'client_secret': app_secret,
+        'grant_type': 'authorization_code',
+        'redirect_uri': redirect,
+        'code': code,
+    })
+    short_data = require_ok(short_resp)
+    if isinstance(short_data.get('data'), list) and short_data['data'] and not short_data.get('access_token'):
+        short_data = short_data['data'][0]
+    short_token = short_data.get('access_token')
+    if not short_token:
+        raise RuntimeError('Threads hat keinen Kurzzeit-Access-Token geliefert.')
+    long_resp = await client.get(THREADS_LONG_TOKEN, params={
+        'grant_type': 'th_exchange_token',
+        'client_secret': app_secret,
+        'access_token': short_token,
+    })
+    long_data = require_ok(long_resp)
+    long_token = long_data.get('access_token') or short_token
+    lifetime = int(long_data.get('expires_in') or 5184000)
+    me_resp = await client.get(f'{THREADS_GRAPH}/me',
+        headers={'Authorization': 'Bearer ' + long_token},
+        params={'fields': 'id,username,name'})
+    info = require_ok(me_resp)
+    if not info.get('id'):
+        raise RuntimeError('Threads: Profil-ID konnte nicht geladen werden.')
+    return info, long_token, lifetime
+
+
+async def refresh_threads(acc: dict, force: bool = False) -> str:
+    token = decrypt(acc['access_enc'])
+    if not token:
+        raise RuntimeError('Threads-Token fehlt. Bitte Threads neu verbinden.')
+    expires = acc.get('expires_at')
+    if expires:
+        exp_dt = _parse_utc(expires)
+        if exp_dt is not None:
+            if exp_dt <= datetime.now(timezone.utc):
+                raise RuntimeError('Threads-Token ist abgelaufen. Bitte Threads neu verbinden.')
+            if not force and exp_dt > datetime.now(timezone.utc) + timedelta(days=7):
+                return token
+    metadata = json.loads(acc.get('metadata') or '{}')
+    issued_dt = _parse_utc(metadata.get('token_updated_at')) or datetime.now(timezone.utc)
+    if not force and datetime.now(timezone.utc) - issued_dt < timedelta(hours=24):
+        return token
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.get(THREADS_REFRESH_TOKEN, params={
+            'grant_type': 'th_refresh_token',
+            'access_token': token,
+        })
+        data = require_ok(resp)
+    new_token = data.get('access_token')
+    lifetime = int(data.get('expires_in') or 0)
+    if not new_token or lifetime <= 0:
+        return token
+    new_expiry = (datetime.now(timezone.utc) + timedelta(seconds=lifetime)).isoformat()
+    metadata['token_updated_at'] = now()
+    with dbconn() as db:
+        db.execute(
+            'UPDATE connections SET access_enc=?,expires_at=?,metadata=?,checked_at=?,status=? WHERE id=?',
+            (encrypt(new_token), new_expiry, json.dumps(metadata), now(), 'connected', acc['id']),
+        )
+    return new_token
+
+
+async def refresh_threads_accounts_auto():
+    with dbconn() as db:
+        rows = [dict(x) for x in db.execute("SELECT * FROM connections WHERE provider='threads'")]
+    for acc in rows:
+        try:
+            await refresh_threads(acc)
+        except Exception:
+            with dbconn() as db:
+                db.execute("UPDATE connections SET status='error',checked_at=? WHERE id=?", (now(), acc['id']))
+
+
+async def publish_threads(job, media, acc):
+    if job['format'] not in {'post', 'reel', 'video'}:
+        raise RuntimeError('MANUAL: Threads unterstützt Beiträge sowie 9:16-Videos/Reels (keine 24h-Stories).')
+    is_video = media['mime'] == 'video/mp4'
+    if media['mime'] not in {'image/jpeg', 'image/png', 'video/mp4'}:
+        raise RuntimeError('MANUAL: Threads erwartet JPG/PNG oder MP4.')
+    token = await refresh_threads(acc)
+    th_user_id = acc['external_id']
+    caption = (job.get('caption') or '')[:500]
+    if is_video:
+        video_path = MEDIA / media['filename']
+        if not video_path.is_file() or video_path.stat().st_size == 0:
+            raise RuntimeError('Threads: Die MP4-Datei fehlt oder ist leer.')
+        media_url = (
+            await asyncio.to_thread(gcs_signed_video_url, media)
+            if media_cloud_enabled() and not CLOUD_MODE
+            else secure_media_url(media['id'], minutes=360)
+        )
+        payload = {'media_type': 'VIDEO', 'video_url': media_url}
+    else:
+        await asyncio.to_thread(instagram_ready_jpeg, media, 'post')
+        media_url = (
+            await asyncio.to_thread(gcs_signed_media_url, media, 360, 'post')
+            if media_cloud_enabled() and not CLOUD_MODE
+            else secure_media_url(media['id'], minutes=360, instagram_format='post')
+        )
+        payload = {'media_type': 'IMAGE', 'image_url': media_url}
+    if caption:
+        payload['text'] = caption
+    async with httpx.AsyncClient(timeout=httpx.Timeout(300, connect=30), follow_redirects=False) as client:
+        create_resp = await client.post(
+            f'{THREADS_GRAPH}/{th_user_id}/threads',
+            headers={'Authorization': 'Bearer ' + token},
+            data=payload,
+        )
+        container = require_ok(create_resp)
+        cid = container.get('id')
+        if not cid:
+            raise RuntimeError('Threads: Kein Mediencontainer erstellt.')
+        for poll_idx in range(30):
+            status_resp = await client.get(
+                f'{THREADS_GRAPH}/{cid}',
+                headers={'Authorization': 'Bearer ' + token},
+                params={'fields': 'status,error_message'},
+            )
+            st_obj = require_ok(status_resp)
+            st_code = (st_obj.get('status') or '').upper()
+            if st_code == 'FINISHED':
+                break
+            if st_code in ('ERROR', 'EXPIRED'):
+                err_msg = st_obj.get('error_message') or st_code
+                raise RuntimeError(f'Threads: Medienverarbeitung fehlgeschlagen ({str(err_msg)[:200]}).')
+            if st_code == 'PUBLISHED':
+                return 'Threads-Beitrag #' + str(cid)
+            await asyncio.sleep(3 if poll_idx < 4 else 8)
+        else:
+            raise RuntimeError('Threads: Video/Bild verarbeitet noch. Vor erneutem Senden im Threads-Profil prüfen.')
+        pub_resp = await client.post(
+            f'{THREADS_GRAPH}/{th_user_id}/threads_publish',
+            headers={'Authorization': 'Bearer ' + token},
+            data={'creation_id': cid},
+        )
+        pub_obj = require_ok(pub_resp)
+        pub_id = pub_obj.get('id') or cid
+        kind_label = 'Video' if is_video else 'Beitrag'
+        return f'Threads-{kind_label} #{pub_id}'
+
+
+async def publish_linkedin(job, media, acc):
+    if job['format'] not in {'post', 'reel', 'video'}:
+        raise RuntimeError('MANUAL: LinkedIn unterstützt Feed-Beiträge sowie 9:16-/16:9-Videos (keine Stories).')
+    is_video = media['mime'] == 'video/mp4'
+    if media['mime'] not in {'image/jpeg', 'image/png', 'video/mp4'}:
+        raise RuntimeError('MANUAL: LinkedIn erwartet JPG/PNG oder MP4.')
+    token = decrypt(acc['access_enc'])
+    if not token:
+        raise RuntimeError('LinkedIn-Token fehlt. Bitte LinkedIn neu verbinden.')
+    if acc.get('expires_at'):
+        exp_dt = _parse_utc(acc.get('expires_at'))
+        if exp_dt is not None and exp_dt <= datetime.now(timezone.utc):
+            raise RuntimeError('LinkedIn-Token abgelaufen. Bitte LinkedIn erneut verbinden.')
+    ext_id = str(acc['external_id'])
+    author_urn = ext_id if ext_id.startswith('urn:li:') else f'urn:li:person:{ext_id}'
+    path = MEDIA / media['filename']
+    if not path.is_file() or path.stat().st_size == 0:
+        raise RuntimeError('LinkedIn: Mediendatei fehlt oder ist leer.')
+    size = path.stat().st_size
+    recipe = 'urn:li:digitalmediaRecipe:feedshare-video' if is_video else 'urn:li:digitalmediaRecipe:feedshare-image'
+    media_category = 'VIDEO' if is_video else 'IMAGE'
+    li_headers = {
+        'Authorization': 'Bearer ' + token,
+        'X-Restli-Protocol-Version': '2.0.0',
+        'Content-Type': 'application/json',
+    }
+    register_body = {
+        'registerUploadRequest': {
+            'recipes': [recipe],
+            'owner': author_urn,
+            'serviceRelationships': [
+                {'relationshipType': 'OWNER', 'identifier': 'urn:li:userGeneratedContent'}
+            ],
+        }
+    }
+    async with httpx.AsyncClient(timeout=httpx.Timeout(300, connect=30), follow_redirects=False) as client:
+        reg_resp = await client.post(
+            'https://api.linkedin.com/v2/assets?action=registerUpload',
+            headers=li_headers,
+            json=register_body,
+        )
+        reg_data = require_ok(reg_resp)
+        val = reg_data.get('value') or {}
+        asset_urn = val.get('asset')
+        upload_mech = (val.get('uploadMechanism') or {}).get(
+            'com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest'
+        ) or {}
+        upload_url = upload_mech.get('uploadUrl')
+        if not asset_urn or not upload_url:
+            raise RuntimeError('LinkedIn: Upload-Registrierung unvollständig.')
+        put_headers = {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': media['mime'],
+        }
+        for hk, hv in (upload_mech.get('headers') or {}).items():
+            put_headers[hk] = hv
+        up_resp = await asyncio.to_thread(
+            _stream_binary_request, 'PUT', upload_url, put_headers, path, 0, size, 300.0
+        )
+        if up_resp.status_code >= 400:
+            raise RuntimeError(f'LinkedIn Medien-Upload fehlgeschlagen (HTTP {up_resp.status_code}).')
+        caption = (job.get('caption') or '').strip()[:3000]
+        ugc_body = {
+            'author': author_urn,
+            'lifecycleState': 'PUBLISHED',
+            'specificContent': {
+                'com.linkedin.ugc.ShareContent': {
+                    'shareCommentary': {'text': caption},
+                    'shareMediaCategory': media_category,
+                    'media': [
+                        {
+                            'status': 'READY',
+                            'media': asset_urn,
+                            'title': {'text': (media.get('original_name') or 'TimeSave Social')[:180]},
+                        }
+                    ],
+                }
+            },
+            'visibility': {'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'},
+        }
+        post_resp = await client.post(
+            'https://api.linkedin.com/v2/ugcPosts',
+            headers=li_headers,
+            json=ugc_body,
+        )
+        post_data = require_ok(post_resp)
+        post_id = post_data.get('id') or post_resp.headers.get('x-restli-id') or asset_urn
+        kind_label = 'Video' if is_video else 'Beitrag'
+        return f'LinkedIn-{kind_label} veröffentlicht ({post_id})'
+
+
 async def dispatch(job,media):
     if not job.get('connection_id'):
         raise RuntimeError('MANUAL: Kein verbundenes Zielkonto ausgewählt.')
@@ -2018,6 +2282,10 @@ async def dispatch(job,media):
         return await publish_instagram(job,media,account)
     if account['provider']=='youtube':
         return await publish_youtube(job,media,account)
+    if account['provider']=='threads':
+        return await publish_threads(job,media,account)
+    if account['provider']=='linkedin':
+        return await publish_linkedin(job,media,account)
     if account['provider']=='tiktok':
         return await publish_tiktok(job,media,account)
     raise RuntimeError('MANUAL: Für '+job['platform']+' ist diese Veröffentlichungsart nicht offiziell automatisiert.')
@@ -2109,6 +2377,7 @@ async def scheduler_loop():
                 last_meta_check=loop.time()
                 await refresh_meta_sessions_auto()
                 await refresh_instagram_direct_accounts_auto()
+                await refresh_threads_accounts_auto()
                 with dbconn() as db:
                     db.execute('DELETE FROM oauth_states WHERE expires_at < ?', (now(),))
                     db.execute('DELETE FROM user_sessions WHERE expires_at < ?', (now(),))
@@ -2287,7 +2556,7 @@ async def lifespan(app):
         except asyncio.CancelledError:
             pass
 
-app=FastAPI(title='TimeSave Social by Solvetec · V19.5',lifespan=lifespan)
+app=FastAPI(title='TimeSave Social by Solvetec · V20.6',lifespan=lifespan)
 
 
 @app.middleware('http')
@@ -2332,6 +2601,10 @@ def put_config(req:SaveConfig):
             uri=urlsplit(value)
             if uri.scheme!='https' or not uri.hostname or uri.username or uri.password or uri.query or uri.fragment or uri.path!='/oauth/instagram/callback':
                 raise HTTPException(400,'Instagram benötigt eine registrierte HTTPS-Callback-URL mit /oauth/instagram/callback.')
+        if key in ('threads_redirect_uri','linkedin_redirect_uri') and value:
+            uri=urlsplit(value)
+            if uri.scheme not in ('https','http') or not uri.hostname or uri.query or uri.fragment:
+                raise HTTPException(400,'Callback-URL für Threads/LinkedIn muss eine gültige URL ohne Query-Parameter sein.')
         if key=='public_base_url' and value and not (value.startswith('https://') and '?' not in value and '#' not in value):
             raise HTTPException(400,'Öffentliche URL muss HTTPS sein; für lokale Meta-Tests leer lassen.')
         if key in SECRET_FIELDS and not value:
@@ -2498,6 +2771,8 @@ def provider_info():
     return {
         'facebook':{'name':'Facebook-Seite','login':'meta','support':'Bildbeitrag und Foto-Story automatisch (Meta-Berechtigungen erforderlich)'},
         'instagram':{'name':'Instagram Business / Creator','login':'instagram_unified','support':'Video-Reels und Video-Stories direkt zu Meta hochladen; Bilder benötigen öffentliche HTTPS-URL.'},
+        'threads':{'name':'Threads','login':'threads','support':'Direkte Bildbeiträge und 9:16-Videos über die offizielle Meta Threads API (60-Tage-Token mit Auto-Refresh).'},
+        'linkedin':{'name':'LinkedIn','login':'linkedin','support':'Direkter Upload von 9:16-Videos und Bildbeiträgen in deinen LinkedIn-Feed per OpenID Connect & Share on LinkedIn.'},
         'tiktok':{'name':'TikTok','login':'tiktok','support':'Derzeit nur MP4-Videos per Direct Post. Bilder und Bilderreihen im Kreativstudio als MP4 erstellen; Foto-Direct-Post und TikTok-Stories pausiert.'},
         'whatsapp':{'name':'WhatsApp-Status','login':'manual','support':'Keine allgemeine offizielle Status-Veröffentlichungs-API; vorbereiteter Export'},
         'whatsapp_channel':{'name':'WhatsApp-Kanal','login':'manual','support':'Keine allgemeine offizielle Kanal-Publishing-API; vorbereiteter Export'},
@@ -2828,6 +3103,15 @@ async def check_connection(ident:str, user: dict = Depends(current_user)):
                 r=await client.get('https://open.tiktokapis.com/v2/user/info/',
                     headers={'Authorization':'Bearer '+token},params={'fields':'open_id'})
                 tiktok_response(r)
+            elif prov=='threads':
+                token=await refresh_threads(acc)
+                r=await client.get(f'{THREADS_GRAPH}/me',
+                    headers={'Authorization':'Bearer '+token},params={'fields':'id,username'})
+                require_ok(r)
+            elif prov=='linkedin':
+                r=await client.get('https://api.linkedin.com/v2/userinfo',
+                    headers={'Authorization':'Bearer '+token})
+                require_ok(r)
             else:
                 raise RuntimeError('Keine Prüfung für diese Plattform')
         status='connected'
@@ -3085,6 +3369,31 @@ def oauth_start(provider:str, user: dict = Depends(current_user)):
             values.update(code_challenge=hashlib.sha256(verifier.encode('ascii')).hexdigest(),
                           code_challenge_method='S256')
         url='https://www.tiktok.com/v2/auth/authorize/?'+urlencode(values)
+    elif provider=='threads':
+        app_id, app_secret = _threads_app_credentials()
+        if not app_id or not app_secret:
+            raise HTTPException(400,'Threads App-ID und App Secret fehlen. Bitte in Render (THREADS_APP_ID / THREADS_APP_SECRET) oder unter Einstellungen speichern.')
+        redirect = callback_url('threads')
+        url = 'https://threads.net/oauth/authorize?' + urlencode({
+            'client_id': app_id,
+            'redirect_uri': redirect,
+            'scope': 'threads_basic,threads_content_publish',
+            'response_type': 'code',
+            'state': state,
+        })
+    elif provider=='linkedin':
+        li_id = setting('linkedin_client_id')
+        li_secret = setting('linkedin_client_secret')
+        if not li_id or not li_secret:
+            raise HTTPException(400,'LinkedIn Client ID und Client Secret fehlen. Bitte in Render (LINKEDIN_CLIENT_ID / LINKEDIN_CLIENT_SECRET) oder unter Einstellungen speichern.')
+        redirect = callback_url('linkedin')
+        url = 'https://www.linkedin.com/oauth/v2/authorization?' + urlencode({
+            'response_type': 'code',
+            'client_id': li_id,
+            'redirect_uri': redirect,
+            'state': state,
+            'scope': 'openid profile email w_member_social',
+        })
     else:
         raise HTTPException(400,'OAuth-Anbieter unbekannt')
     return {'url':url,'callback':callback_url(provider)}
@@ -3097,6 +3406,7 @@ def callback_page(success,detail):
        +'<p>'+html.escape(detail)+'</p><p>Du kannst dieses Fenster schließen. TimeSave Social aktualisiert den Kontostatus anschließend automatisch.</p>')
 
 @app.get('/oauth/{provider}/callback')
+@app.get('/api/{provider}/callback')
 async def oauth_callback(provider:str,state:str='',code:str='',error:str=''):
     oauth_session=consume_state(provider,state)
     if not oauth_session:
@@ -3170,6 +3480,54 @@ async def oauth_callback(provider:str,state:str='',code:str='',error:str=''):
                 tok['access_token'],tok.get('refresh_token',''),exp,
                 metadata={'scopes':tok.get('scope',''),'refresh_expires_in':tok.get('refresh_expires_in',0)}, owner_id=owner_id)
             return callback_page(True,'TikTok-Konto erfolgreich verbunden (video.publish & video.upload). Du kannst jetzt Videos sowie Foto-/Karussell-Beiträge direkt oder als Entwurf in deine TikTok-Inbox senden.')
+        if provider=='threads':
+            redirect = oauth_session.get('redirect_uri') or callback_url('threads')
+            async with httpx.AsyncClient(timeout=30) as client:
+                info, long_token, lifetime = await threads_exchange_code(client, code, redirect)
+            exp = (datetime.now(timezone.utc) + timedelta(seconds=lifetime)).isoformat()
+            uname = info.get('username') or info.get('name') or str(info['id'])
+            label = f'Threads @{uname}' if info.get('username') else f'Threads · {uname}'
+            upsert_account(
+                'threads', label, str(info['id']), long_token, '', exp,
+                metadata={'username': info.get('username', ''), 'token_updated_at': now()},
+                owner_id=owner_id,
+            )
+            return callback_page(True, f'Threads-Konto ({label}) erfolgreich mit 60-Tage-Token verbunden. Du kannst jetzt Beiträge und 9:16-Videos direkt veröffentlichen.')
+        if provider=='linkedin':
+            redirect = oauth_session.get('redirect_uri') or callback_url('linkedin')
+            async with httpx.AsyncClient(timeout=30) as client:
+                tok_resp = await client.post(
+                    'https://www.linkedin.com/oauth/v2/accessToken',
+                    data={
+                        'grant_type': 'authorization_code',
+                        'code': code,
+                        'redirect_uri': redirect,
+                        'client_id': setting('linkedin_client_id'),
+                        'client_secret': setting('linkedin_client_secret'),
+                    },
+                    headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                )
+                tok = require_ok(tok_resp)
+                access_token = tok.get('access_token')
+                if not access_token:
+                    raise RuntimeError('LinkedIn hat keinen Access-Token geliefert.')
+                u_resp = await client.get(
+                    'https://api.linkedin.com/v2/userinfo',
+                    headers={'Authorization': 'Bearer ' + access_token},
+                )
+                u_info = require_ok(u_resp)
+            sub = str(u_info.get('sub') or '').strip()
+            if not sub:
+                return callback_page(False, 'LinkedIn-Anmeldung erfolgreich, aber keine OpenID-Sub-Kennung erhalten.')
+            exp = (datetime.now(timezone.utc) + timedelta(seconds=int(tok.get('expires_in', 5184000)))).isoformat()
+            display_name = u_info.get('name') or u_info.get('email') or sub
+            label = f'LinkedIn · {display_name}'
+            upsert_account(
+                'linkedin', label, sub, access_token, tok.get('refresh_token', ''), exp,
+                metadata={'email': u_info.get('email', ''), 'author_urn': f'urn:li:person:{sub}'},
+                owner_id=owner_id,
+            )
+            return callback_page(True, f'{label} erfolgreich verbunden. Du kannst jetzt 9:16-Videos und Bildbeiträge direkt auf LinkedIn posten.')
     except Exception as exc:
         return callback_page(False,'API-Verbindung fehlgeschlagen: '+(str(exc)[:220] if isinstance(exc,RuntimeError) else type(exc).__name__))
     return callback_page(False,'Anbieter nicht unterstützt')
@@ -4337,6 +4695,8 @@ def _plan_for_owner(req:Plan, owner_id: str = 'owner'):
     allowed = {
         'facebook':{'image':{'story','post'},'video':{'story','post','video','reel'}},
         'instagram':{'image':{'story','post'},'video':{'story','reel'}},
+        'threads':{'image':{'post'},'video':{'post','video','reel'}},
+        'linkedin':{'image':{'post'},'video':{'post','video','reel'}},
         'telegram':{'image':{'post'},'video':{'post'}},
         'telegram_story':{'image':{'story'},'video':{'story'}},
         'tiktok':{'image':{'post'},'video':{'video'}},
@@ -4924,8 +5284,8 @@ def branding():
         has_users = db.execute('SELECT COUNT(*) FROM users').fetchone()[0] > 0
     return {
         'brand_name': (_ts_env('BRAND_NAME') or 'TimeSave Social').strip()[:48],
-        'brand_subtitle': (_ts_env('BRAND_SUBTITLE') or 'BY SOLVETEC · V19.5').strip()[:64],
-        'version': '19.5',
+        'brand_subtitle': (_ts_env('BRAND_SUBTITLE') or 'BY SOLVETEC · V20.6').strip()[:64],
+        'version': '20.6',
         'db_backend': DB_BACKEND,
         'multi_user': True,
         'has_users': has_users,

@@ -70,6 +70,14 @@ const v17ProviderDefs = [
     { format: 'post', kind: 'video', label: '▶ Feed-Video', group: 'video' },
     { format: 'story', kind: 'video', label: '▶ Video-Story', group: 'story' },
   ]},
+  { provider: 'threads', name: 'Threads', icon: '🧵', formats: [
+    { format: 'post', kind: 'image', label: '▧ Bild-Beitrag', group: 'post' },
+    { format: 'reel', kind: 'video', label: '▶ 9:16 Video / Reel (MP4)', group: 'video' },
+  ]},
+  { provider: 'linkedin', name: 'LinkedIn', icon: '💼', formats: [
+    { format: 'post', kind: 'image', label: '▧ Bild-Beitrag', group: 'post' },
+    { format: 'video', kind: 'video', label: '▶ 9:16 / Feed-Video (MP4)', group: 'video' },
+  ]},
   { provider: 'telegram', name: 'Telegram-Kanal', icon: '✈️', formats: [
     { format: 'post', kind: 'image', label: '▧ Bild-Beitrag', group: 'post' },
     { format: 'post', kind: 'video', label: '▶ Video-Beitrag', group: 'video' },
