@@ -39,7 +39,7 @@ async function v178OpenShare(mediaId, destination, caption = '') {
     if ($('v178Status')) {
       $('v178Status').textContent = canNative
         ? '✓ Datei bereit. Tippe auf „Jetzt über Teilen-Menü öffnen“.'
-        : 'ℹ️ Dieser Browser unterstützt kein direktes Datei-Teilen. Lade die Datei unten herunter oder nutze den Handy-QR.';
+        : 'ℹ️ Dieser Browser unterstützt kein direktes Datei-Teilen. Lade die Datei einfach unten direkt herunter.';
     }
   } catch (e) {
     if ($('v178Status')) $('v178Status').textContent = '⚠ ' + e.message;

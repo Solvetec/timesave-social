@@ -378,7 +378,6 @@ function v1725VideoReset() {
 
 function v1725DuplicateLayer() {
   if (!window.v177State) return;
-  if (v177State.layers.length >= 8) { toast('Maximal 8 Texteinblendungen erreicht.', true); return; }
   v177SyncInputsToLayer();
   const cur = v177CurrentLayer();
   const nextStart = Math.round(((cur.end_seconds != null ? cur.end_seconds : (cur.start_seconds + 5)) + 0.2) * 10) / 10;

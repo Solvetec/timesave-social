@@ -82,7 +82,6 @@ function v175RenderSelectedDay() {
     `<div class="v175-card-actions">` +
     `<button type="button" data-sk-share="whatsapp" data-sk-media="${esc(item.media_id)}" data-sk-cap="${esc(item.caption)}">💚 Teilen-Dialog</button>` +
     `<button type="button" class="outline" data-sk-share="tiktok" data-sk-media="${esc(item.media_id)}" data-sk-cap="${esc(item.caption)}">🎵 TikTok-Story teilen</button>` +
-    `<button type="button" class="outline v175-desktop-only" data-sk-qr="${esc(item.media_id)}">📱 Handy-QR</button>` +
     (item.caption ? `<button type="button" class="outline" data-sk-copy="${esc(item.caption)}">📋 Text kopieren</button>` : '') +
     `</div>` +
     `<div class="v175-checks">` +
@@ -96,7 +95,6 @@ function v175RenderSelectedDay() {
     else downloadMedia(b.dataset.skMedia);
   }));
 
-  cards.querySelectorAll('[data-sk-qr]').forEach(b => b.addEventListener('click', () => v14OpenMobileQr(b.dataset.skQr)));
   cards.querySelectorAll('[data-sk-copy]').forEach(b => b.addEventListener('click', async () => {
     try { await navigator.clipboard.writeText(b.dataset.skCopy); toast('Begleittext kopiert.'); }
     catch { toast('Kopieren im Browser blockiert.', true); }

@@ -2556,7 +2556,7 @@ async def lifespan(app):
         except asyncio.CancelledError:
             pass
 
-app=FastAPI(title='TimeSave Social by Solvetec · V20.8',lifespan=lifespan)
+app=FastAPI(title='TimeSave Social by Solvetec · V20.9',lifespan=lifespan)
 
 
 @app.middleware('http')
@@ -4219,8 +4219,8 @@ async def make_tiktok_video(ident:str,req:TikTokVideoConvert, user: dict = Depen
 # An omitted `seconds` now means: KEEP THE ENTIRE ORIGINAL MP4.
 # Existing V9 requests with an explicit seconds value remain compatible.
 class VideoTextLayer(BaseModel):
-    title: str = Field('', max_length=180)
-    subtitle: str = Field('', max_length=260)
+    title: str = Field('', max_length=2000)
+    subtitle: str = Field('', max_length=2000)
     badge: str = Field('', max_length=32)
     title_color: str = Field('#ffffff', pattern=r'^#[0-9a-fA-F]{6}$')
     position: str = Field('center', pattern='^(top|center|bottom)$')
@@ -4242,8 +4242,8 @@ class VideoStudioRequest(BaseModel):
     filter: str = Field('normal', pattern='^(normal|warm|cool|vivid|mono)$')
     background_mode: str = Field('cover', pattern='^(cover|blur|solid)$')
     background_color: str = Field('#221828', pattern=r'^#[0-9a-fA-F]{6}$')
-    title: str = Field('', max_length=180)
-    subtitle: str = Field('', max_length=260)
+    title: str = Field('', max_length=2000)
+    subtitle: str = Field('', max_length=2000)
     badge: str = Field('', max_length=32)
     title_color: str = Field('#ffffff', pattern=r'^#[0-9a-fA-F]{6}$')
     position: str = Field('center', pattern='^(top|center|bottom)$')
@@ -4254,7 +4254,7 @@ class VideoStudioRequest(BaseModel):
     rotation: int = Field(0)  # validated to a safe, discrete set in endpoint
     mirror: bool = False
     # Each layer has its own independently timed display interval.
-    text_layers: list[VideoTextLayer] = Field(default_factory=list, max_length=8)
+    text_layers: list[VideoTextLayer] = Field(default_factory=list, max_length=50)
 
 
 def _video_studio_overlay(req, size, out_path):
@@ -5284,8 +5284,8 @@ def branding():
         has_users = db.execute('SELECT COUNT(*) FROM users').fetchone()[0] > 0
     return {
         'brand_name': (_ts_env('BRAND_NAME') or 'TimeSave Social').strip()[:48],
-        'brand_subtitle': (_ts_env('BRAND_SUBTITLE') or 'BY SOLVETEC · V20.8').strip()[:64],
-        'version': '20.8',
+        'brand_subtitle': (_ts_env('BRAND_SUBTITLE') or 'BY SOLVETEC · V20.9').strip()[:64],
+        'version': '20.9',
         'db_backend': DB_BACKEND,
         'multi_user': True,
         'has_users': has_users,

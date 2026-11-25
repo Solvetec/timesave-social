@@ -32,8 +32,7 @@ function v13RenderWaQueue() {
   list.innerHTML = waJobs.slice(0, 30).map(j => {
     const done = j.status === 'published_manual';
     return `<div class="v13-wa-row"><div><strong>${esc(j.original_name)}</strong><br><small>${new Date(j.due_at).toLocaleString('de-DE')} · ${esc(j.platform === 'whatsapp' ? 'WhatsApp-Status' : 'WhatsApp-Kanal')}</small></div>` +
-      `<div class="row"><button type="button" class="outline tiny" onclick="v14OpenMobileQr('${esc(j.media_id)}')">📱 QR</button>` +
-      `<button type="button" class="outline tiny" onclick="downloadMedia('${esc(j.media_id)}')">⬇ Datei</button>` +
+      `<div class="row"><button type="button" class="outline tiny" onclick="downloadMedia('${esc(j.media_id)}')">⬇ Datei</button>` +
       (done ? '<span class="pill green">Erledigt ✓</span>' : `<button type="button" class="tiny" onclick="jobAction('${esc(j.id)}','mark-published')">Als erledigt abhaken ✓</button>`) +
       `</div></div>`;
   }).join('');

@@ -18,8 +18,8 @@ function v177MakeLayer(start = 0, end = 5) {
 }
 
 const v177State = window.v177State = {
-  layers: [v177MakeLayer(0, 5)],
-  activeIndex: 0,
+  layers: [],
+  activeIndex: -1,
   duration: 0,
   isVideo: false,
   rendering: false,
@@ -37,10 +37,21 @@ function v177CurrentLayer() {
 }
 
 function v177LoadLayerToInputs() {
-  const layer = v177CurrentLayer();
-  if (!layer) return;
+  const editor = $('v177LayerEditor');
+  const dupBtn = $('v1725DupLayer');
+  const layer = v177State.layers[v177State.activeIndex];
+  if ($('v177LayerCount')) $('v177LayerCount').textContent = v177State.layers.length + ' Textfeld(er)';
+  if (!layer) {
+    if (editor) editor.hidden = true;
+    if (dupBtn) dupBtn.hidden = true;
+    v177RenderLayerChips();
+    v177RenderTimeline();
+    v177PaintOverlay();
+    return;
+  }
+  if (editor) editor.hidden = false;
+  if (dupBtn) dupBtn.hidden = false;
   if ($('v177ActiveLayer')) $('v177ActiveLayer').textContent = 'Text ' + (v177State.activeIndex + 1) + ' bearbeiten';
-  if ($('v177LayerCount')) $('v177LayerCount').textContent = v177State.layers.length + ' / 8';
   if ($('v177TextStart')) $('v177TextStart').value = String(layer.start_seconds ?? 0);
   if ($('v177TextEnd')) $('v177TextEnd').value = String(layer.end_seconds ?? 5);
   if ($('v9VideoTitle')) $('v9VideoTitle').value = layer.title || '';
@@ -52,7 +63,7 @@ function v177LoadLayerToInputs() {
   if ($('v179Y')) $('v179Y').value = String(layer.y_pct ?? 50);
   if ($('v179BoxOpacity')) $('v179BoxOpacity').value = String(layer.box_opacity ?? 72);
   if ($('v179FontScale')) $('v179FontScale').value = String(layer.text_scale ?? 100);
-  if ($('v177RemoveLayer')) $('v177RemoveLayer').disabled = v177State.layers.length <= 1;
+  if ($('v177RemoveLayer')) $('v177RemoveLayer').disabled = false;
   v177RenderLayerChips();
   v177RenderTimeline();
   v177PaintOverlay();
@@ -97,6 +108,10 @@ function v177RenderLayerChips() {
 function v177RenderTimeline() {
   const root = $('v177Timeline');
   if (!root) return;
+  if (!v177State.layers.length) {
+    root.innerHTML = '<small style="opacity:.75;">Noch keine Textfelder hinzugefügt. Klicke im Bereich „Texte“ auf „+ Text hinzufügen“.</small>';
+    return;
+  }
   const total = Math.max(1, v177State.isVideo ? (v177State.duration || 10) : (Number($('v177PhotoSeconds')?.value) || 8));
   root.innerHTML = v177State.layers.map((l, idx) => {
     const start = Math.max(0, Math.min(total, Number(l.start_seconds) || 0));
@@ -233,7 +248,6 @@ document.querySelectorAll('input[name="v177LengthMode"]').forEach(r => r.addEven
 $('v177PhotoSeconds')?.addEventListener('input', () => { v177UpdateLengthPanels(); v177RenderTimeline(); });
 
 $('v177AddLayer')?.addEventListener('click', () => {
-  if (v177State.layers.length >= 8) { toast('Maximal 8 Texteinblendungen pro Video.', true); return; }
   const start = v177State.isVideo && v177Vid ? Math.round(v177Vid.currentTime * 10) / 10 : 0;
   const end = v177State.duration > 0 ? Math.min(v177State.duration, start + 5) : start + 5;
   v177State.layers.push(v177MakeLayer(start, Math.round(end * 10) / 10));
@@ -241,9 +255,9 @@ $('v177AddLayer')?.addEventListener('click', () => {
   v177LoadLayerToInputs();
 });
 $('v177RemoveLayer')?.addEventListener('click', () => {
-  if (v177State.layers.length <= 1) return;
+  if (!v177State.layers.length) return;
   v177State.layers.splice(v177State.activeIndex, 1);
-  v177State.activeIndex = Math.max(0, v177State.activeIndex - 1);
+  v177State.activeIndex = v177State.layers.length ? Math.max(0, v177State.activeIndex - 1) : -1;
   v177LoadLayerToInputs();
 });
 $('v177UsePlayhead')?.addEventListener('click', () => {

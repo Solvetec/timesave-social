@@ -671,7 +671,6 @@ function v17RenderHub() {
       `<div class="v17-asset-actions">` +
       `<button type="button" class="tiny" data-hub-use="${esc(m.id)}">✦ Nutzen</button>` +
       `<button type="button" class="outline tiny" data-hub-edit="${esc(m.id)}" data-hub-vid="${isVid ? '1' : '0'}">${isVid ? '▶ Edit' : '◈ Edit'}</button>` +
-      `<button type="button" class="outline tiny" data-hub-qr="${esc(m.id)}">📱 QR</button>` +
       `<button type="button" class="outline tiny" data-hub-dl="${esc(m.id)}">⬇</button>` +
       `<button type="button" class="outline tiny" data-hub-rename="${esc(m.id)}">✎</button>` +
       `<button type="button" class="danger tiny" data-hub-del="${esc(m.id)}">✕</button>` +
@@ -682,7 +681,6 @@ function v17RenderHub() {
   root.querySelectorAll('[data-hub-edit]').forEach(b => b.addEventListener('click', () => {
     if (b.dataset.hubVid === '1') openVideoStudio(b.dataset.hubEdit); else openStudio(b.dataset.hubEdit);
   }));
-  root.querySelectorAll('[data-hub-qr]').forEach(b => b.addEventListener('click', () => v14OpenMobileQr(b.dataset.hubQr)));
   root.querySelectorAll('[data-hub-dl]').forEach(b => b.addEventListener('click', () => downloadMedia(b.dataset.hubDl)));
   root.querySelectorAll('[data-hub-rename]').forEach(b => b.addEventListener('click', async () => {
     const item = media.find(x => x.id === b.dataset.hubRename);

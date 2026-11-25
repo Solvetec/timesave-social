@@ -47,14 +47,14 @@ function v1712RenderTikTokPanel() {
 function v1712ImagePosition(yPct) {
   if ($('studioY')) $('studioY').value = String(yPct);
   if ($('studioX')) $('studioX').value = '50';
-  paintStudio();
+  if (typeof v209SyncImgLayerFromInputs === 'function') v209SyncImgLayerFromInputs(); else paintStudio();
 }
 
 function v1712ImageReadable() {
   if ($('studioBox')) $('studioBox').value = 'glass';
   if ($('studioColor')) $('studioColor').value = '#ffffff';
   if ($('studioAlign')) $('studioAlign').value = 'center';
-  paintStudio();
+  if (typeof v209SyncImgLayerFromInputs === 'function') v209SyncImgLayerFromInputs(); else paintStudio();
 }
 
 document.querySelectorAll('[data-v1712-bg]').forEach(btn => {
@@ -103,7 +103,7 @@ function v207ApplySolvetecBrand(variant) {
   }
   if ($('v179BoxOpacity')) $('v179BoxOpacity').value = '84';
   if (typeof v177SyncInputsToLayer === 'function') v177SyncInputsToLayer();
-  if (typeof paintStudio === 'function') paintStudio();
+  if (typeof v209SyncImgLayerFromInputs === 'function') v209SyncImgLayerFromInputs(); else if (typeof paintStudio === 'function') paintStudio();
   if (typeof toast === 'function') {
     toast(isGold ? '✨ Solvetec Dunkelblau & Gold Stil angewendet.' : '✨ Solvetec Clean Weiß Stil angewendet.');
   }

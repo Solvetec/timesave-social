@@ -2,6 +2,104 @@
    No third-party upload SDK is loaded. The browser paints the exact JPG it saves. */
 'use strict';
 let studioImage=null, studioImageUrl=null, studioBusy=false, currentStudioId='',calendarMediaKey='';
+let v209StudioTextLayers = [];
+let v209ActiveImgLayer = -1;
+let v209ImgHitBoxes = [];
+
+function v209MakeImgTextLayer(yPct = 49) {
+  return {
+    text: '',
+    font: $('studioFont')?.value || 'Georgia',
+    size: 54,
+    color: '#ffffff',
+    box: 'glass',
+    align: 'center',
+    x: 50,
+    y: yPct,
+  };
+}
+
+function v209LoadImgLayerToInputs() {
+  const editor = $('v209ImgTextEditor');
+  const layer = v209StudioTextLayers[v209ActiveImgLayer];
+  if ($('v209ImgLayerCount')) {
+    $('v209ImgLayerCount').textContent = v209StudioTextLayers.length + (v209StudioTextLayers.length === 1 ? ' Textfeld' : ' Textfelder');
+  }
+  if (!layer) {
+    if (editor) editor.hidden = true;
+    v209RenderImgLayerChips();
+    paintStudio();
+    return;
+  }
+  if (editor) editor.hidden = false;
+  if ($('v209ImgActiveLabel')) $('v209ImgActiveLabel').textContent = 'Textfeld ' + (v209ActiveImgLayer + 1) + ' bearbeiten';
+  if ($('studioText')) $('studioText').value = layer.text || '';
+  if ($('v209ImgCharCount')) $('v209ImgCharCount').textContent = '(' + (layer.text || '').length + ' / 2000 Zeichen)';
+  if ($('studioFontSize')) $('studioFontSize').value = String(layer.size ?? 54);
+  if ($('studioAlign')) $('studioAlign').value = layer.align || 'center';
+  if ($('studioColor')) $('studioColor').value = layer.color || '#ffffff';
+  if ($('studioBox')) $('studioBox').value = layer.box || 'glass';
+  if ($('studioX')) $('studioX').value = String(layer.x ?? 50);
+  if ($('studioY')) $('studioY').value = String(layer.y ?? 49);
+  v209RenderImgLayerChips();
+  paintStudio();
+}
+
+function v209SyncImgLayerFromInputs() {
+  const layer = v209StudioTextLayers[v209ActiveImgLayer];
+  if (!layer) { paintStudio(); return; }
+  layer.text = $('studioText')?.value || '';
+  layer.font = $('studioFont')?.value || 'Georgia';
+  layer.size = +($('studioFontSize')?.value || 54);
+  layer.align = $('studioAlign')?.value || 'center';
+  layer.color = $('studioColor')?.value || '#ffffff';
+  layer.box = $('studioBox')?.value || 'glass';
+  layer.x = +($('studioX')?.value || 50);
+  layer.y = +($('studioY')?.value || 49);
+  if ($('v209ImgCharCount')) $('v209ImgCharCount').textContent = '(' + layer.text.length + ' / 2000 Zeichen)';
+  v209RenderImgLayerChips();
+  paintStudio();
+}
+
+function v209RenderImgLayerChips() {
+  const root = $('v209ImgLayerList');
+  if (!root) return;
+  root.innerHTML = v209StudioTextLayers.map((l, idx) => {
+    const snippet = (l.text || '').trim().slice(0, 16);
+    return `<button type="button" class="v177-layer-chip ${idx === v209ActiveImgLayer ? 'active' : ''}" data-img-layer="${idx}">Text ${idx + 1}${snippet ? ': ' + esc(snippet) : ''}</button>`;
+  }).join('');
+  root.querySelectorAll('[data-img-layer]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      v209ActiveImgLayer = Number(btn.dataset.imgLayer);
+      v209LoadImgLayerToInputs();
+    });
+  });
+}
+
+function v209AddStudioTextLayer() {
+  const offsets = [49, 24, 74, 36, 62];
+  const yDefault = offsets[v209StudioTextLayers.length % offsets.length];
+  v209StudioTextLayers.push(v209MakeImgTextLayer(yDefault));
+  v209ActiveImgLayer = v209StudioTextLayers.length - 1;
+  v209LoadImgLayerToInputs();
+  setTimeout(() => $('studioText')?.focus(), 20);
+}
+
+function v209DuplicateStudioTextLayer() {
+  const cur = v209StudioTextLayers[v209ActiveImgLayer];
+  if (!cur) return;
+  const copy = { ...cur, y: Math.min(87, (cur.y ?? 49) + 10) };
+  v209StudioTextLayers.push(copy);
+  v209ActiveImgLayer = v209StudioTextLayers.length - 1;
+  v209LoadImgLayerToInputs();
+}
+
+function v209RemoveStudioTextLayer() {
+  if (!v209StudioTextLayers.length) return;
+  v209StudioTextLayers.splice(v209ActiveImgLayer, 1);
+  v209ActiveImgLayer = v209StudioTextLayers.length ? Math.max(0, v209ActiveImgLayer - 1) : -1;
+  v209LoadImgLayerToInputs();
+}
 const studioDimensions={story:[1080,1920],portrait:[1080,1350],square:[1080,1080]};
 const editorNames=['Frage & Kartenrückseiten','Karte 1 & Deutung','Karte 2 & Deutung','Karte 3 & Deutung'];
 const prevNav=nav;
@@ -85,7 +183,7 @@ function wrapCanvasText(ctx,text,maxWidth){
     });
     all.push(line);
   });
-  return all.slice(0,22);
+  return all.slice(0,65);
 }
 function paintStudio(forExport=false){
   const canvas=$('studioCanvas'); if(!canvas)return;
@@ -139,43 +237,52 @@ function paintStudio(forExport=false){
     points.forEach(([x,y,size])=>{ctx.font=size*2+'px Georgia';ctx.fillText('✦',w*x,h*y)});
   }
   ctx.restore();
-  if(opt.text){
+  v209ImgHitBoxes = [];
+  const activeFontFamily = $('studioFont')?.value || 'Georgia';
+  v209StudioTextLayers.forEach((layer, idx) => {
+    const rawText = (layer.text || '').trim();
+    if (!rawText) return;
     ctx.save();
-    ctx.font=`bold ${opt.size}px "${opt.font}", Arial, sans-serif`;
-    ctx.textBaseline='middle';
-    const maxWidth=w*.80;
-    const lines=wrapCanvasText(ctx,opt.text,maxWidth);
-    const lineHeight=opt.size*1.29;
-    const totalHeight=lines.length*lineHeight;
-    const boxW=w*.90;
-    const boxH=Math.min(h*.90,totalHeight+opt.size*1.55);
-    const centerX=w*opt.x/100,centerY=h*opt.y/100;
-    const left=Math.max(12,Math.min(w-boxW-12,centerX-boxW/2));
-    const top=Math.max(12,Math.min(h-boxH-12,centerY-boxH/2));
-    if(opt.box!=='none'){
-      ctx.fillStyle=opt.box==='light'?'rgba(255,251,249,.78)':'rgba(15,11,38,.70)';
-      ctx.beginPath();ctx.roundRect(left,top,boxW,boxH,28);ctx.fill();
+    let fSize = Number(layer.size || 54);
+    const maxWidth = w * 0.82;
+    ctx.font = `bold ${fSize}px "${activeFontFamily}", Arial, sans-serif`;
+    let lines = wrapCanvasText(ctx, rawText, maxWidth);
+    // Auto-scale down gently if very long text (500+ chars) would exceed 86% of canvas height
+    while (lines.length * fSize * 1.26 > h * 0.84 && fSize > 22) {
+      fSize = Math.max(22, fSize - 3);
+      ctx.font = `bold ${fSize}px "${activeFontFamily}", Arial, sans-serif`;
+      lines = wrapCanvasText(ctx, rawText, maxWidth);
     }
-    ctx.fillStyle=opt.color;
-    ctx.shadowColor=opt.box==='none'?'rgba(0,0,0,.85)':'rgba(0,0,0,.28)';
-    ctx.shadowBlur=opt.box==='none'?13:5;
-    ctx.textAlign=opt.align;
-    let tx=opt.align==='left'?left+55:opt.align==='right'?left+boxW-55:left+boxW/2;
-    const firstY=top+(boxH-totalHeight)/2+lineHeight/2;
-    lines.forEach((line,i)=>ctx.fillText(line,tx,firstY+lineHeight*i,maxWidth));
+    ctx.textBaseline = 'middle';
+    const lineHeight = fSize * 1.26;
+    const totalHeight = lines.length * lineHeight;
+    const boxW = w * 0.90;
+    const boxH = Math.min(h * 0.92, totalHeight + fSize * 1.35);
+    const centerX = w * (layer.x ?? 50) / 100;
+    const centerY = h * (layer.y ?? 49) / 100;
+    const left = Math.max(12, Math.min(w - boxW - 12, centerX - boxW / 2));
+    const top = Math.max(12, Math.min(h - boxH - 12, centerY - boxH / 2));
+    v209ImgHitBoxes.push({ idx, left, top, right: left + boxW, bottom: top + boxH });
+    if (layer.box !== 'none') {
+      ctx.fillStyle = layer.box === 'light' ? 'rgba(255,251,249,.82)' : 'rgba(15,11,38,.74)';
+      ctx.beginPath(); ctx.roundRect(left, top, boxW, boxH, 28); ctx.fill();
+    }
+    if (!forExport && idx === v209ActiveImgLayer) {
+      ctx.strokeStyle = 'rgba(245, 196, 81, 0.85)';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([12, 8]);
+      ctx.beginPath(); ctx.roundRect(left, top, boxW, boxH, 28); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.fillStyle = layer.color || '#ffffff';
+    ctx.shadowColor = layer.box === 'none' ? 'rgba(0,0,0,.85)' : 'rgba(0,0,0,.28)';
+    ctx.shadowBlur = layer.box === 'none' ? 13 : 5;
+    ctx.textAlign = layer.align || 'center';
+    const tx = layer.align === 'left' ? left + 48 : layer.align === 'right' ? left + boxW - 48 : left + boxW / 2;
+    const firstY = top + (boxH - totalHeight) / 2 + lineHeight / 2;
+    lines.forEach((line, i) => ctx.fillText(line, tx, firstY + lineHeight * i, maxWidth));
     ctx.restore();
-  }
-  // Second text block stays separate from the headline, making Tarot descriptions legible.
-  const subtitle=$('studioSubtitle')?.value.trim()||'';
-  if(subtitle){
-    ctx.save();const fsize=Math.round(Math.max(25,opt.size*.57));
-    ctx.font='600 '+fsize+'px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    const lines=wrapCanvasText(ctx,subtitle,w*.77).slice(0,7);const lh=fsize*1.30;
-    const y=Math.min(h*.87,Math.max(h*.62,opt.y/100*h+opt.size*2.1));
-    const boxh=lh*lines.length+fsize*.8,by=Math.min(h-boxh-h*.11,y-boxh/2);
-    ctx.fillStyle='rgba(15,10,34,.67)';ctx.beginPath();ctx.roundRect(w*.075,by,w*.85,boxh,25);ctx.fill();
-    ctx.fillStyle='#ffffff';lines.forEach((line,i)=>ctx.fillText(line,w/2,by+fsize*.65+lh*i,w*.75));ctx.restore();
-  }
+  });
   const signature=$('studioSignature')?.value.trim()||'';
   if(signature){ctx.save();ctx.font='700 31px Arial,sans-serif';ctx.textAlign='center';
     ctx.fillStyle='rgba(255,255,255,.95)';ctx.shadowColor='rgba(0,0,0,.85)';ctx.shadowBlur=12;
@@ -188,7 +295,21 @@ function paintStudio(forExport=false){
   $('fontOut').textContent=opt.size;$('xOut').textContent=opt.x;$('yOut').textContent=opt.y;
 }
 $('studioCanvas').addEventListener('pointerdown',ev=>{
-  if(!$('studioText').value.trim())return;
+  if(!v209StudioTextLayers.length)return;
+  const canvas=$('studioCanvas'),rect=canvas.getBoundingClientRect();
+  const cx=(ev.clientX-rect.left)/rect.width*canvas.width;
+  const cy=(ev.clientY-rect.top)/rect.height*canvas.height;
+  for(let i=v209ImgHitBoxes.length-1;i>=0;i--){
+    const b=v209ImgHitBoxes[i];
+    if(cx>=b.left && cx<=b.right && cy>=b.top && cy<=b.bottom){
+      if(v209ActiveImgLayer!==b.idx){
+        v209ActiveImgLayer=b.idx;
+        v209LoadImgLayerToInputs();
+      }
+      break;
+    }
+  }
+  if(v209ActiveImgLayer<0)return;
   ev.currentTarget.setPointerCapture(ev.pointerId);
   moveStudioText(ev);
 });
@@ -196,9 +317,12 @@ $('studioCanvas').addEventListener('pointermove',ev=>{
   if(ev.buttons===1 && ev.currentTarget.hasPointerCapture(ev.pointerId))moveStudioText(ev);
 });
 function moveStudioText(event){
+  const layer=v209StudioTextLayers[v209ActiveImgLayer];
+  if(!layer)return;
   const canvas=$('studioCanvas'),rect=canvas.getBoundingClientRect();
   const px=Math.max(12,Math.min(88,Math.round((event.clientX-rect.left)/rect.width*100)));
   const py=Math.max(13,Math.min(87,Math.round((event.clientY-rect.top)/rect.height*100)));
+  layer.x=px; layer.y=py;
   $('studioX').value=px;$('studioY').value=py;paintStudio();
 }
 async function saveStudio(continuePlanning){
