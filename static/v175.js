@@ -80,7 +80,8 @@ function v175RenderSelectedDay() {
     `<div class="v17-flex"><strong>${esc(item.time)} · ${esc(item.filename)}</strong><span class="pill">${esc(item.platforms.join(', '))}</span></div>` +
     (item.caption ? `<p class="v175-card-caption">${esc(item.caption)}</p>` : '') +
     `<div class="v175-card-actions">` +
-    `<button type="button" data-sk-share="whatsapp" data-sk-media="${esc(item.media_id)}" data-sk-cap="${esc(item.caption)}">💚 WhatsApp teilen</button>` +
+    `<button type="button" data-sk-wa-express="${esc(item.media_id)}" data-sk-key="${esc(item.key)}" data-sk-cap="${esc(item.caption)}">⚡ WhatsApp Status (Text + Teilen)</button>` +
+    `<button type="button" class="outline" data-sk-share="whatsapp" data-sk-media="${esc(item.media_id)}" data-sk-cap="${esc(item.caption)}">💚 Teilen-Dialog</button>` +
     `<button type="button" class="outline" data-sk-share="tiktok" data-sk-media="${esc(item.media_id)}" data-sk-cap="${esc(item.caption)}">🎵 TikTok-Story teilen</button>` +
     `<button type="button" class="outline" data-sk-qr="${esc(item.media_id)}">📱 Handy-QR</button>` +
     `<button type="button" class="outline" data-sk-dl="${esc(item.media_id)}">⬇ Datei</button>` +
@@ -94,6 +95,19 @@ function v175RenderSelectedDay() {
   cards.querySelectorAll('[data-sk-thumb]').forEach(img => loadImageInto(img, img.dataset.skThumb));
   cards.querySelectorAll('[data-sk-share]').forEach(b => b.addEventListener('click', () => {
     if (typeof v178OpenShare === 'function') v178OpenShare(b.dataset.skMedia, b.dataset.skShare, b.dataset.skCap || '');
+    else downloadMedia(b.dataset.skMedia);
+  }));
+  cards.querySelectorAll('[data-sk-wa-express]').forEach(b => b.addEventListener('click', async () => {
+    const cap = (b.dataset.skCap || '').trim();
+    if (cap) {
+      try {
+        await navigator.clipboard.writeText(cap);
+        toast('📋 Begleittext in Zwischenablage kopiert · Öffne WhatsApp-Übergabe …');
+      } catch {
+        toast('Öffne WhatsApp-Übergabe (Text bitte manuell kopieren).');
+      }
+    }
+    if (typeof v178OpenShare === 'function') v178OpenShare(b.dataset.skMedia, 'whatsapp', cap);
     else downloadMedia(b.dataset.skMedia);
   }));
   cards.querySelectorAll('[data-sk-qr]').forEach(b => b.addEventListener('click', () => v14OpenMobileQr(b.dataset.skQr)));
@@ -150,3 +164,28 @@ refresh = async function() {
   v175Load();
   return res;
 };
+
+
+async function v207MarkAllWhatsAppDone() {
+  if (!v175Data || !v175SelectedDay) return;
+  const dayObj = v175Data.days.find(d => d.date === v175SelectedDay);
+  if (!dayObj || !dayObj.items.length) return;
+  const openItems = dayObj.items.filter(it => !it.channels.whatsapp_status);
+  if (!openItems.length) {
+    toast('Alle WhatsApp-Status-Beiträge dieses Tages sind bereits abgehakt.');
+    return;
+  }
+  try {
+    for (const item of openItems) {
+      await json('/api/storykit/' + encodeURIComponent(item.key) + '/complete', {
+        date: v175SelectedDay,
+        channel: 'whatsapp_status',
+        done: true,
+      });
+    }
+    await v175Load();
+    toast('✓ ' + openItems.length + ' WhatsApp-Status-Beitrag/Beiträge als erledigt markiert.');
+  } catch (e) {
+    toast(e.message, true);
+  }
+}

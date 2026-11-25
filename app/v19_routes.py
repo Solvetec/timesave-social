@@ -63,7 +63,7 @@ class StudioPresetCreate(BaseModel):
     format: str = Field('story', pattern='^(story|portrait|square|landscape)$')
     filter: str = Field('normal', pattern='^(normal|warm|cool|vivid|mono)$')
     background_mode: str = Field('cover', pattern='^(cover|blur|solid)$')
-    background_color: str = Field('#221828', pattern=r'^#[0-9a-fA-F]{6}$')
+    background_color: str = Field('#0f1b33', pattern=r'^#[0-9a-fA-F]{6}$')
     title_color: str = Field('#ffffff', pattern=r'^#[0-9a-fA-F]{6}$')
     position: str = Field('center', pattern='^(top|center|bottom)$')
     badge: str = Field('', max_length=32)
@@ -438,15 +438,57 @@ def create_v19_router(deps: dict[str, Any]) -> APIRouter:
     # ------------------------------------------------------------------
     PRESET_KEY = 'v19_studio_presets'
 
+    DEFAULT_SOLVETEC_PRESETS = [
+        {
+            'id': 'solvetec-gold-916',
+            'name': 'Solvetec Dunkelblau & Gold (9:16)',
+            'format': 'story',
+            'filter': 'normal',
+            'background_mode': 'blur',
+            'background_color': '#0f1b33',
+            'title_color': '#f5c451',
+            'position': 'center',
+            'badge': 'Solvetec',
+            'motion': 'zoom',
+            'fade': True,
+        },
+        {
+            'id': 'solvetec-clean-white',
+            'name': 'Solvetec Clean Weiß & Royalblau',
+            'format': 'story',
+            'filter': 'cool',
+            'background_mode': 'solid',
+            'background_color': '#132442',
+            'title_color': '#ffffff',
+            'position': 'bottom',
+            'badge': 'TimeSave Social',
+            'motion': 'static',
+            'fade': True,
+        },
+        {
+            'id': 'solvetec-portrait-gold',
+            'name': 'Solvetec 4:5 Feed Gold-Akzent',
+            'format': 'portrait',
+            'filter': 'warm',
+            'background_mode': 'cover',
+            'background_color': '#0f1b33',
+            'title_color': '#ffd166',
+            'position': 'top',
+            'badge': 'Solvetec',
+            'motion': 'static',
+            'fade': False,
+        },
+    ]
+
     def _load_presets(owner_id: str) -> list[dict[str, Any]]:
         raw = get_user_pref(owner_id, PRESET_KEY)
         if not raw:
-            return []
+            return list(DEFAULT_SOLVETEC_PRESETS)
         try:
             data = json.loads(raw)
-            return data if isinstance(data, list) else []
+            return data if isinstance(data, list) and data else list(DEFAULT_SOLVETEC_PRESETS)
         except json.JSONDecodeError:
-            return []
+            return list(DEFAULT_SOLVETEC_PRESETS)
 
     @router.get('/studio/presets')
     def list_studio_presets(user: dict = Depends(current_user)):
