@@ -80,11 +80,9 @@ function v175RenderSelectedDay() {
     `<div class="v17-flex"><strong>${esc(item.time)} · ${esc(item.filename)}</strong><span class="pill">${esc(item.platforms.join(', '))}</span></div>` +
     (item.caption ? `<p class="v175-card-caption">${esc(item.caption)}</p>` : '') +
     `<div class="v175-card-actions">` +
-    `<button type="button" data-sk-wa-express="${esc(item.media_id)}" data-sk-key="${esc(item.key)}" data-sk-cap="${esc(item.caption)}">⚡ WhatsApp Status (Text + Teilen)</button>` +
-    `<button type="button" class="outline" data-sk-share="whatsapp" data-sk-media="${esc(item.media_id)}" data-sk-cap="${esc(item.caption)}">💚 Teilen-Dialog</button>` +
+    `<button type="button" data-sk-share="whatsapp" data-sk-media="${esc(item.media_id)}" data-sk-cap="${esc(item.caption)}">💚 Teilen-Dialog</button>` +
     `<button type="button" class="outline" data-sk-share="tiktok" data-sk-media="${esc(item.media_id)}" data-sk-cap="${esc(item.caption)}">🎵 TikTok-Story teilen</button>` +
-    `<button type="button" class="outline" data-sk-qr="${esc(item.media_id)}">📱 Handy-QR</button>` +
-    `<button type="button" class="outline" data-sk-dl="${esc(item.media_id)}">⬇ Datei</button>` +
+    `<button type="button" class="outline v175-desktop-only" data-sk-qr="${esc(item.media_id)}">📱 Handy-QR</button>` +
     (item.caption ? `<button type="button" class="outline" data-sk-copy="${esc(item.caption)}">📋 Text kopieren</button>` : '') +
     `</div>` +
     `<div class="v175-checks">` +
@@ -97,21 +95,8 @@ function v175RenderSelectedDay() {
     if (typeof v178OpenShare === 'function') v178OpenShare(b.dataset.skMedia, b.dataset.skShare, b.dataset.skCap || '');
     else downloadMedia(b.dataset.skMedia);
   }));
-  cards.querySelectorAll('[data-sk-wa-express]').forEach(b => b.addEventListener('click', async () => {
-    const cap = (b.dataset.skCap || '').trim();
-    if (cap) {
-      try {
-        await navigator.clipboard.writeText(cap);
-        toast('📋 Begleittext in Zwischenablage kopiert · Öffne WhatsApp-Übergabe …');
-      } catch {
-        toast('Öffne WhatsApp-Übergabe (Text bitte manuell kopieren).');
-      }
-    }
-    if (typeof v178OpenShare === 'function') v178OpenShare(b.dataset.skMedia, 'whatsapp', cap);
-    else downloadMedia(b.dataset.skMedia);
-  }));
+
   cards.querySelectorAll('[data-sk-qr]').forEach(b => b.addEventListener('click', () => v14OpenMobileQr(b.dataset.skQr)));
-  cards.querySelectorAll('[data-sk-dl]').forEach(b => b.addEventListener('click', () => downloadMedia(b.dataset.skDl)));
   cards.querySelectorAll('[data-sk-copy]').forEach(b => b.addEventListener('click', async () => {
     try { await navigator.clipboard.writeText(b.dataset.skCopy); toast('Begleittext kopiert.'); }
     catch { toast('Kopieren im Browser blockiert.', true); }
