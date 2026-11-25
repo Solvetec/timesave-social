@@ -2556,7 +2556,7 @@ async def lifespan(app):
         except asyncio.CancelledError:
             pass
 
-app=FastAPI(title='TimeSave Social by Solvetec · V20.9',lifespan=lifespan)
+app=FastAPI(title='TimeSave Social by Solvetec · V20.10',lifespan=lifespan)
 
 
 @app.middleware('http')
@@ -5284,8 +5284,8 @@ def branding():
         has_users = db.execute('SELECT COUNT(*) FROM users').fetchone()[0] > 0
     return {
         'brand_name': (_ts_env('BRAND_NAME') or 'TimeSave Social').strip()[:48],
-        'brand_subtitle': (_ts_env('BRAND_SUBTITLE') or 'BY SOLVETEC · V20.9').strip()[:64],
-        'version': '20.9',
+        'brand_subtitle': (_ts_env('BRAND_SUBTITLE') or 'BY SOLVETEC · V20.10').strip()[:64],
+        'version': '20.10',
         'db_backend': DB_BACKEND,
         'multi_user': True,
         'has_users': has_users,

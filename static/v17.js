@@ -834,7 +834,8 @@ nav = function(id) {
   v17PrevNav(id);
   const titles = {
     dashboard: 'Übersicht',
-    publish: 'Veröffentlichen',
+    composer: 'Upload & Veröffentlichen',
+    publish: 'Schnell-Publisher',
     mediaHub: 'Mediathek',
     drafts: 'Entwürfe',
     queue: 'Planung & Archiv',
@@ -844,6 +845,7 @@ nav = function(id) {
     v17Montage: 'Kreativstudio · Bilder → Video',
   };
   if (titles[id]) $('pageTitle').textContent = titles[id];
+  if (id === 'composer') { if (typeof v12RenderGallery === 'function') v12RenderGallery(); if (typeof renderTargets === 'function') renderTargets(); }
   if (id === 'publish') { v17RenderAssets(); v17RenderProviders(); v17RenderSelectedTargets(); }
   if (id === 'mediaHub') { v17RenderHub(); if (typeof v1723LoadStorage === 'function') v1723LoadStorage(); }
   if (id === 'drafts' && typeof v1723LoadDrafts === 'function') v1723LoadDrafts();
