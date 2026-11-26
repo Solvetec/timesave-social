@@ -435,7 +435,7 @@
     if (pubBtn) {
       pubBtn.onclick = () => {
         if (typeof v17PickForPublish === 'function') v17PickForPublish(id, kind);
-        else if (typeof nav === 'function') nav('composer');
+        else if (typeof nav === 'function') nav('publish');
       };
     }
     box.hidden = false;

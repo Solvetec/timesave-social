@@ -2556,7 +2556,7 @@ async def lifespan(app):
         except asyncio.CancelledError:
             pass
 
-app=FastAPI(title='TimeSave Social by Solvetec · V20.10',lifespan=lifespan)
+app=FastAPI(title='TimeSave Social by Solvetec · V21.0',lifespan=lifespan)
 
 
 @app.middleware('http')
@@ -4223,10 +4223,14 @@ class VideoTextLayer(BaseModel):
     subtitle: str = Field('', max_length=2000)
     badge: str = Field('', max_length=32)
     title_color: str = Field('#ffffff', pattern=r'^#[0-9a-fA-F]{6}$')
+    box_color: str = Field('#0f1b33', pattern=r'^#[0-9a-fA-F]{6}$')
+    font_family: str = Field('Arial', max_length=40)
+    bold: bool = True
+    stroke: bool = True
     position: str = Field('center', pattern='^(top|center|bottom)$')
     x_pct: float = Field(50,ge=5,le=95)
     y_pct: float | None = Field(None,ge=5,le=95)
-    box_opacity: int = Field(72,ge=0,le=100)
+    box_opacity: int = Field(78,ge=0,le=100)
     text_scale: int = Field(100,ge=60,le=160)
     start_seconds: float = Field(0, ge=0, le=14400)
     end_seconds: float | None = Field(None, ge=0, le=14400)
@@ -4262,12 +4266,30 @@ def _video_studio_overlay(req, size, out_path):
     w,h=size
     image=Image.new('RGBA',(w,h),(0,0,0,0))
     draw=ImageDraw.Draw(image)
-    def font(size,bold=False):
-        roots=[
-          ('C:/Windows/Fonts/arialbd.ttf' if bold else 'C:/Windows/Fonts/arial.ttf'),
-          ('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf' if bold else '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')]
+    fam = getattr(req, 'font_family', 'Arial') or 'Arial'
+    is_bold = bool(getattr(req, 'bold', True))
+    use_stroke = bool(getattr(req, 'stroke', True))
+    box_hex = getattr(req, 'box_color', '#0f1b33') or '#0f1b33'
+    def font(fsize, bold=False):
+        is_serif = any(k in fam.lower() for k in ('georgia', 'times', 'serif', 'playfair'))
+        is_mono = 'mono' in fam.lower() or 'courier' in fam.lower()
+        if is_serif:
+            roots = [
+                ('C:/Windows/Fonts/georgiab.ttf' if bold else 'C:/Windows/Fonts/georgia.ttf'),
+                ('/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf' if bold else '/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf'),
+            ]
+        elif is_mono:
+            roots = [
+                ('C:/Windows/Fonts/courbd.ttf' if bold else 'C:/Windows/Fonts/cour.ttf'),
+                ('/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf' if bold else '/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf'),
+            ]
+        else:
+            roots = [
+                ('C:/Windows/Fonts/arialbd.ttf' if bold else 'C:/Windows/Fonts/arial.ttf'),
+                ('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf' if bold else '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'),
+            ]
         for path in roots:
-            try:return ImageFont.truetype(path,size)
+            try:return ImageFont.truetype(path,fsize)
             except OSError:pass
         return ImageFont.load_default()
     def wrap(text,max_width,fnt,max_lines):
@@ -4282,30 +4304,40 @@ def _video_studio_overlay(req, size, out_path):
             if current:lines.append(current)
         return lines[:max_lines]
     if req.title.strip() or req.subtitle.strip():
-        title_font=font(round(w*0.063*req.text_scale/100),True)
-        sub_font=font(round(w*0.037*req.text_scale/100))
-        titles=wrap(req.title.strip(),w*.78,title_font,4)
-        subs=wrap(req.subtitle.strip(),w*.78,sub_font,4)
-        tline=round(w*.087*req.text_scale/100);sline=round(w*.060*req.text_scale/100)
-        total=max(100,len(titles)*tline+len(subs)*sline+round(w*.090))
-        cx=round(w*req.x_pct/100)
-        cy=round(h*(req.y_pct if req.y_pct is not None else {'top':24,'center':50,'bottom':76}[req.position])/100)
-        box_width=round(w*.86)
-        left=max(round(w*.03),min(round(w*.97)-box_width,cx-box_width//2))
-        right=left+box_width
-        y=max(round(h*.04),min(round(h*.96)-total,cy-total//2))
-        opacity=round(255*req.box_opacity/100)
+        scale_val = req.text_scale / 100.0
+        base_t_px = max(18, round(w * 0.056 * scale_val))
+        title_font = font(base_t_px, is_bold)
+        titles = wrap(req.title.strip(), w * 0.78, title_font, 35)
+        while len(titles) * round(base_t_px * 1.32) > h * 0.74 and base_t_px > 18:
+            base_t_px = max(18, base_t_px - 2)
+            title_font = font(base_t_px, is_bold)
+            titles = wrap(req.title.strip(), w * 0.78, title_font, 40)
+        sub_px = max(15, round(base_t_px * 0.68))
+        sub_font = font(sub_px, is_bold)
+        subs = wrap(req.subtitle.strip(), w * 0.78, sub_font, 25)
+        tline = round(base_t_px * 1.32)
+        sline = round(sub_px * 1.30)
+        total = max(92, len(titles)*tline + len(subs)*sline + round(w*0.082))
+        cx = round(w * req.x_pct / 100)
+        cy = round(h * (req.y_pct if req.y_pct is not None else {'top':24,'center':50,'bottom':76}[req.position]) / 100)
+        box_width = round(w * 0.88)
+        left = max(round(w*.03), min(round(w*.97)-box_width, cx-box_width//2))
+        right = left + box_width
+        y = max(round(h*.03), min(round(h*.97)-total, cy-total//2))
+        opacity = round(255 * req.box_opacity / 100)
+        box_rgb = tuple(int(box_hex[i:i+2],16) for i in (1,3,5))
         if opacity:
-            draw.rounded_rectangle((left,y,right,y+total),radius=round(w*.033),fill=(22,15,44,opacity))
-        ty=y+round(w*.045)
-        rgb=tuple(int(req.title_color[i:i+2],16) for i in (1,3,5))
+            draw.rounded_rectangle((left,y,right,y+total),radius=round(w*.033),fill=box_rgb+(opacity,))
+        ty = y + round(w * 0.040)
+        rgb = tuple(int(req.title_color[i:i+2],16) for i in (1,3,5))
+        s_w = 2 if use_stroke else 0
         for line in titles:
-            draw.text(((left+right)/2,ty),line,font=title_font,anchor='mt',fill=rgb+(255,),stroke_width=1,stroke_fill=(0,0,0,90))
-            ty+=tline
-        if titles and subs: ty+=round(w*.010)
+            draw.text(((left+right)/2,ty),line,font=title_font,anchor='mt',fill=rgb+(255,),stroke_width=s_w,stroke_fill=(0,0,0,185))
+            ty += tline
+        if titles and subs: ty += round(w*.010)
         for line in subs:
-            draw.text(((left+right)/2,ty),line,font=sub_font,anchor='mt',fill=(249,244,255,255))
-            ty+=sline
+            draw.text(((left+right)/2,ty),line,font=sub_font,anchor='mt',fill=rgb+(245,),stroke_width=max(0,s_w-1),stroke_fill=(0,0,0,165))
+            ty += sline
     if req.badge.strip():
         fnt=font(round(w*.03),True)
         txt=req.badge.strip()[:32]
@@ -5284,8 +5316,8 @@ def branding():
         has_users = db.execute('SELECT COUNT(*) FROM users').fetchone()[0] > 0
     return {
         'brand_name': (_ts_env('BRAND_NAME') or 'TimeSave Social').strip()[:48],
-        'brand_subtitle': (_ts_env('BRAND_SUBTITLE') or 'BY SOLVETEC · V20.10').strip()[:64],
-        'version': '20.10',
+        'brand_subtitle': (_ts_env('BRAND_SUBTITLE') or 'BY SOLVETEC · V21.0').strip()[:64],
+        'version': '21.0',
         'db_backend': DB_BACKEND,
         'multi_user': True,
         'has_users': has_users,

@@ -119,7 +119,7 @@ async function v9RenderVideo(continuePlanning){
     chosen=r.id;$('composerMedia').value=r.id;
     if(continuePlanning){
       $('postCaption').value=[$('v9VideoTitle').value,$('v9VideoSubtitle').value].filter(Boolean).join('\n');
-      nav('composer');showComposerPreview();
+      nav('publish');showComposerPreview();
       toast('Dein Video wurde gerendert. Wähle jetzt TikTok / Reels / andere unterstützte Ziele und einen Termin.');
     }else{nav('library');toast('Neues MP4 im Fundus gespeichert. Original unverändert.');}
   }catch(e){$('v9VideoProgress').textContent='⚠ '+e.message;toast(e.message,true)}

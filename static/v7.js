@@ -5,18 +5,43 @@ let studioImage=null, studioImageUrl=null, studioBusy=false, currentStudioId='',
 let v209StudioTextLayers = [];
 let v209ActiveImgLayer = -1;
 let v209ImgHitBoxes = [];
+let v210ImgDragging = false;
+let v210ImgSnapX = null;
+let v210ImgSnapY = null;
 
-function v209MakeImgTextLayer(yPct = 49) {
+function v209MakeImgTextLayer(yPct = 50) {
   return {
     text: '',
-    font: $('studioFont')?.value || 'Georgia',
+    font: $('studioLayerFont')?.value || $('studioFont')?.value || 'Arial',
+    bold: true,
+    stroke: true,
     size: 54,
     color: '#ffffff',
+    boxColor: '#0f1b33',
+    boxOpacity: 78,
     box: 'glass',
     align: 'center',
     x: 50,
     y: yPct,
   };
+}
+
+function v210HexToRgba(hex, alpha) {
+  const h = (hex || '#0f1b33').replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16) || 15;
+  const g = parseInt(h.slice(2, 4), 16) || 27;
+  const b = parseInt(h.slice(4, 6), 16) || 51;
+  return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, alpha)).toFixed(2)})`;
+}
+
+function v210SetImgColor(target, hex) {
+  if (target === 'box') {
+    if ($('studioBoxColor')) $('studioBoxColor').value = hex;
+    if ($('studioBox') && $('studioBox').value === 'none') $('studioBox').value = 'glass';
+  } else {
+    if ($('studioColor')) $('studioColor').value = hex;
+  }
+  v209SyncImgLayerFromInputs();
 }
 
 function v209LoadImgLayerToInputs() {
@@ -35,12 +60,18 @@ function v209LoadImgLayerToInputs() {
   if ($('v209ImgActiveLabel')) $('v209ImgActiveLabel').textContent = 'Textfeld ' + (v209ActiveImgLayer + 1) + ' bearbeiten';
   if ($('studioText')) $('studioText').value = layer.text || '';
   if ($('v209ImgCharCount')) $('v209ImgCharCount').textContent = '(' + (layer.text || '').length + ' / 2000 Zeichen)';
+  if ($('studioLayerFont')) $('studioLayerFont').value = layer.font || 'Arial';
+  if ($('studioLayerBold')) $('studioLayerBold').checked = layer.bold !== false;
+  if ($('studioLayerStroke')) $('studioLayerStroke').checked = layer.stroke !== false;
   if ($('studioFontSize')) $('studioFontSize').value = String(layer.size ?? 54);
   if ($('studioAlign')) $('studioAlign').value = layer.align || 'center';
   if ($('studioColor')) $('studioColor').value = layer.color || '#ffffff';
+  if ($('studioBoxColor')) $('studioBoxColor').value = layer.boxColor || '#0f1b33';
+  if ($('studioBoxOpacity')) $('studioBoxOpacity').value = String(layer.boxOpacity ?? 78);
+  if ($('studioBoxOpacityOut')) $('studioBoxOpacityOut').textContent = String(layer.boxOpacity ?? 78);
   if ($('studioBox')) $('studioBox').value = layer.box || 'glass';
   if ($('studioX')) $('studioX').value = String(layer.x ?? 50);
-  if ($('studioY')) $('studioY').value = String(layer.y ?? 49);
+  if ($('studioY')) $('studioY').value = String(layer.y ?? 50);
   v209RenderImgLayerChips();
   paintStudio();
 }
@@ -49,13 +80,18 @@ function v209SyncImgLayerFromInputs() {
   const layer = v209StudioTextLayers[v209ActiveImgLayer];
   if (!layer) { paintStudio(); return; }
   layer.text = $('studioText')?.value || '';
-  layer.font = $('studioFont')?.value || 'Georgia';
+  layer.font = $('studioLayerFont')?.value || $('studioFont')?.value || 'Arial';
+  layer.bold = $('studioLayerBold') ? !!$('studioLayerBold').checked : true;
+  layer.stroke = $('studioLayerStroke') ? !!$('studioLayerStroke').checked : true;
   layer.size = +($('studioFontSize')?.value || 54);
   layer.align = $('studioAlign')?.value || 'center';
   layer.color = $('studioColor')?.value || '#ffffff';
+  layer.boxColor = $('studioBoxColor')?.value || '#0f1b33';
+  layer.boxOpacity = +($('studioBoxOpacity')?.value ?? 78);
+  if ($('studioBoxOpacityOut')) $('studioBoxOpacityOut').textContent = String(layer.boxOpacity);
   layer.box = $('studioBox')?.value || 'glass';
   layer.x = +($('studioX')?.value || 50);
-  layer.y = +($('studioY')?.value || 49);
+  layer.y = +($('studioY')?.value || 50);
   if ($('v209ImgCharCount')) $('v209ImgCharCount').textContent = '(' + layer.text.length + ' / 2000 Zeichen)';
   v209RenderImgLayerChips();
   paintStudio();
@@ -238,19 +274,20 @@ function paintStudio(forExport=false){
   }
   ctx.restore();
   v209ImgHitBoxes = [];
-  const activeFontFamily = $('studioFont')?.value || 'Georgia';
+  const fallbackFont = $('studioFont')?.value || 'Arial';
   v209StudioTextLayers.forEach((layer, idx) => {
     const rawText = (layer.text || '').trim();
     if (!rawText) return;
     ctx.save();
     let fSize = Number(layer.size || 54);
+    const fam = layer.font || fallbackFont;
+    const weight = layer.bold !== false ? '700' : '400';
     const maxWidth = w * 0.82;
-    ctx.font = `bold ${fSize}px "${activeFontFamily}", Arial, sans-serif`;
+    ctx.font = `${weight} ${fSize}px "${fam}", Arial, sans-serif`;
     let lines = wrapCanvasText(ctx, rawText, maxWidth);
-    // Auto-scale down gently if very long text (500+ chars) would exceed 86% of canvas height
     while (lines.length * fSize * 1.26 > h * 0.84 && fSize > 22) {
       fSize = Math.max(22, fSize - 3);
-      ctx.font = `bold ${fSize}px "${activeFontFamily}", Arial, sans-serif`;
+      ctx.font = `${weight} ${fSize}px "${fam}", Arial, sans-serif`;
       lines = wrapCanvasText(ctx, rawText, maxWidth);
     }
     ctx.textBaseline = 'middle';
@@ -259,30 +296,58 @@ function paintStudio(forExport=false){
     const boxW = w * 0.90;
     const boxH = Math.min(h * 0.92, totalHeight + fSize * 1.35);
     const centerX = w * (layer.x ?? 50) / 100;
-    const centerY = h * (layer.y ?? 49) / 100;
+    const centerY = h * (layer.y ?? 50) / 100;
     const left = Math.max(12, Math.min(w - boxW - 12, centerX - boxW / 2));
     const top = Math.max(12, Math.min(h - boxH - 12, centerY - boxH / 2));
     v209ImgHitBoxes.push({ idx, left, top, right: left + boxW, bottom: top + boxH });
-    if (layer.box !== 'none') {
-      ctx.fillStyle = layer.box === 'light' ? 'rgba(255,251,249,.82)' : 'rgba(15,11,38,.74)';
+    const alpha = (layer.boxOpacity ?? 78) / 100;
+    if (layer.box !== 'none' && alpha > 0) {
+      const hex = layer.box === 'light' ? '#fffbf5' : (layer.boxColor || '#0f1b33');
+      ctx.fillStyle = v210HexToRgba(hex, alpha);
       ctx.beginPath(); ctx.roundRect(left, top, boxW, boxH, 28); ctx.fill();
     }
     if (!forExport && idx === v209ActiveImgLayer) {
-      ctx.strokeStyle = 'rgba(245, 196, 81, 0.85)';
+      ctx.strokeStyle = 'rgba(245, 196, 81, 0.90)';
       ctx.lineWidth = 4;
       ctx.setLineDash([12, 8]);
       ctx.beginPath(); ctx.roundRect(left, top, boxW, boxH, 28); ctx.stroke();
       ctx.setLineDash([]);
     }
     ctx.fillStyle = layer.color || '#ffffff';
-    ctx.shadowColor = layer.box === 'none' ? 'rgba(0,0,0,.85)' : 'rgba(0,0,0,.28)';
-    ctx.shadowBlur = layer.box === 'none' ? 13 : 5;
     ctx.textAlign = layer.align || 'center';
     const tx = layer.align === 'left' ? left + 48 : layer.align === 'right' ? left + boxW - 48 : left + boxW / 2;
     const firstY = top + (boxH - totalHeight) / 2 + lineHeight / 2;
-    lines.forEach((line, i) => ctx.fillText(line, tx, firstY + lineHeight * i, maxWidth));
+    if (layer.stroke !== false) {
+      ctx.shadowColor = 'rgba(0,0,0,0.75)';
+      ctx.shadowBlur = layer.box === 'none' ? 14 : 6;
+      ctx.lineWidth = Math.max(3, Math.round(fSize * 0.08));
+      ctx.strokeStyle = 'rgba(0,0,0,0.65)';
+      ctx.lineJoin = 'round';
+    }
+    lines.forEach((line, i) => {
+      const ly = firstY + lineHeight * i;
+      if (layer.stroke !== false) ctx.strokeText(line, tx, ly, maxWidth);
+      ctx.fillText(line, tx, ly, maxWidth);
+    });
     ctx.restore();
   });
+  // Draw Center & Horizontal Alignment Snap Lines (Waage & Mitte) when aligned!
+  if (!forExport && v210ImgDragging && (v210ImgSnapX !== null || v210ImgSnapY !== null)) {
+    ctx.save();
+    ctx.strokeStyle = '#f5c451';
+    ctx.lineWidth = 4;
+    ctx.shadowColor = 'rgba(0,0,0,0.85)';
+    ctx.shadowBlur = 8;
+    if (v210ImgSnapX !== null) {
+      const gx = w * (v210ImgSnapX / 100);
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+    }
+    if (v210ImgSnapY !== null) {
+      const gy = h * (v210ImgSnapY / 100);
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+    }
+    ctx.restore();
+  }
   const signature=$('studioSignature')?.value.trim()||'';
   if(signature){ctx.save();ctx.font='700 31px Arial,sans-serif';ctx.textAlign='center';
     ctx.fillStyle='rgba(255,255,255,.95)';ctx.shadowColor='rgba(0,0,0,.85)';ctx.shadowBlur=12;
@@ -310,18 +375,31 @@ $('studioCanvas').addEventListener('pointerdown',ev=>{
     }
   }
   if(v209ActiveImgLayer<0)return;
+  v210ImgDragging = true;
   ev.currentTarget.setPointerCapture(ev.pointerId);
   moveStudioText(ev);
 });
 $('studioCanvas').addEventListener('pointermove',ev=>{
   if(ev.buttons===1 && ev.currentTarget.hasPointerCapture(ev.pointerId))moveStudioText(ev);
 });
+$('studioCanvas').addEventListener('pointerup',()=>{
+  if(v210ImgDragging){ v210ImgDragging=false; v210ImgSnapX=null; v210ImgSnapY=null; paintStudio(); }
+});
+$('studioCanvas').addEventListener('pointercancel',()=>{
+  if(v210ImgDragging){ v210ImgDragging=false; v210ImgSnapX=null; v210ImgSnapY=null; paintStudio(); }
+});
 function moveStudioText(event){
   const layer=v209StudioTextLayers[v209ActiveImgLayer];
   if(!layer)return;
   const canvas=$('studioCanvas'),rect=canvas.getBoundingClientRect();
-  const px=Math.max(12,Math.min(88,Math.round((event.clientX-rect.left)/rect.width*100)));
-  const py=Math.max(13,Math.min(87,Math.round((event.clientY-rect.top)/rect.height*100)));
+  let px=Math.max(12,Math.min(88,Math.round((event.clientX-rect.left)/rect.width*100)));
+  let py=Math.max(13,Math.min(87,Math.round((event.clientY-rect.top)/rect.height*100)));
+  v210ImgSnapX = null;
+  v210ImgSnapY = null;
+  const xTargets = [50, ...v209StudioTextLayers.filter((_,i)=>i!==v209ActiveImgLayer).map(l=>l.x??50)];
+  const yTargets = [50, 25, 75, ...v209StudioTextLayers.filter((_,i)=>i!==v209ActiveImgLayer).map(l=>l.y??50)];
+  for(const tx of xTargets){ if(Math.abs(px-tx)<=2){ px=tx; v210ImgSnapX=tx; break; } }
+  for(const ty of yTargets){ if(Math.abs(py-ty)<=2){ py=ty; v210ImgSnapY=ty; break; } }
   layer.x=px; layer.y=py;
   $('studioX').value=px;$('studioY').value=py;paintStudio();
 }
@@ -357,11 +435,12 @@ async function saveStudio(continuePlanning){
     });
     bar.value=100; info.textContent='100% · Bild erfolgreich gespeichert.';
     chosen=out.id;
+    if(window.v17State){window.v17State.defaultImage=out.id;window.v17State.kind='image';}
     await refresh();
     $('composerMedia').value=out.id;
     $('postCaption').value=$('studioCaption').value;
     if(continuePlanning){
-      nav('composer');showComposerPreview();
+      nav('publish');showComposerPreview();
       toast('Fertiges Design gespeichert. Jetzt Plattformen und Termin wählen.');
     }else{
       nav('library');toast('Neues JPG im Bilder-Fundus gespeichert. Dein Original bleibt erhalten.');

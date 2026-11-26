@@ -7,14 +7,31 @@ function v177MakeLayer(start = 0, end = 5) {
     subtitle: '',
     badge: '',
     title_color: '#ffffff',
+    box_color: '#0f1b33',
+    font_family: 'Arial',
+    bold: true,
+    stroke: true,
     position: 'center',
     x_pct: 50,
     y_pct: 50,
-    box_opacity: 72,
+    box_opacity: 78,
     text_scale: 100,
     start_seconds: start,
     end_seconds: end,
   };
+}
+
+let v210VidSnapX = null;
+let v210VidSnapY = null;
+
+function v210SetVidColor(target, hex) {
+  if (target === 'box') {
+    if ($('v210VideoBoxColor')) $('v210VideoBoxColor').value = hex;
+    if ($('v179BoxOpacity') && Number($('v179BoxOpacity').value) === 0) $('v179BoxOpacity').value = '78';
+  } else {
+    if ($('v9VideoColor')) $('v9VideoColor').value = hex;
+  }
+  v177SyncInputsToLayer();
 }
 
 const v177State = window.v177State = {
@@ -59,9 +76,13 @@ function v177LoadLayerToInputs() {
   if ($('v9VideoBadge')) $('v9VideoBadge').value = layer.badge || '';
   if ($('v9VideoPosition')) $('v9VideoPosition').value = layer.position || 'center';
   if ($('v9VideoColor')) $('v9VideoColor').value = layer.title_color || '#ffffff';
+  if ($('v210VideoBoxColor')) $('v210VideoBoxColor').value = layer.box_color || '#0f1b33';
+  if ($('v210VideoFont')) $('v210VideoFont').value = layer.font_family || 'Arial';
+  if ($('v210VideoBold')) $('v210VideoBold').checked = layer.bold !== false;
+  if ($('v210VideoStroke')) $('v210VideoStroke').checked = layer.stroke !== false;
   if ($('v179X')) $('v179X').value = String(layer.x_pct ?? 50);
   if ($('v179Y')) $('v179Y').value = String(layer.y_pct ?? 50);
-  if ($('v179BoxOpacity')) $('v179BoxOpacity').value = String(layer.box_opacity ?? 72);
+  if ($('v179BoxOpacity')) $('v179BoxOpacity').value = String(layer.box_opacity ?? 78);
   if ($('v179FontScale')) $('v179FontScale').value = String(layer.text_scale ?? 100);
   if ($('v177RemoveLayer')) $('v177RemoveLayer').disabled = false;
   v177RenderLayerChips();
@@ -80,9 +101,13 @@ function v177SyncInputsToLayer() {
   layer.badge = $('v9VideoBadge')?.value || '';
   layer.position = $('v9VideoPosition')?.value || 'center';
   layer.title_color = $('v9VideoColor')?.value || '#ffffff';
+  layer.box_color = $('v210VideoBoxColor')?.value || '#0f1b33';
+  layer.font_family = $('v210VideoFont')?.value || 'Arial';
+  layer.bold = $('v210VideoBold') ? !!$('v210VideoBold').checked : true;
+  layer.stroke = $('v210VideoStroke') ? !!$('v210VideoStroke').checked : true;
   layer.x_pct = Number($('v179X')?.value || 50);
   layer.y_pct = Number($('v179Y')?.value || 50);
-  layer.box_opacity = Number($('v179BoxOpacity')?.value ?? 72);
+  layer.box_opacity = Number($('v179BoxOpacity')?.value ?? 78);
   layer.text_scale = Number($('v179FontScale')?.value ?? 100);
   v177RenderLayerChips();
   v177RenderTimeline();
@@ -169,14 +194,28 @@ function v177PaintOverlay() {
     $('v9PreviewTitle').textContent = active.title || '';
     $('v9PreviewSubtitle').textContent = active.subtitle || '';
     $('v9PreviewTitle').style.color = active.title_color || '#ffffff';
+    $('v9PreviewSubtitle').style.color = active.title_color || '#ffffff';
+    const fam = active.font_family || 'Arial';
+    const weight = active.bold !== false ? '700' : '400';
+    const shadow = active.stroke !== false ? '0 2px 8px rgba(0,0,0,0.88), 0 0 3px rgba(0,0,0,0.95)' : 'none';
+    $('v9PreviewTitle').style.fontFamily = '"' + fam + '", Arial, sans-serif';
+    $('v9PreviewTitle').style.fontWeight = weight;
+    $('v9PreviewTitle').style.textShadow = shadow;
+    $('v9PreviewSubtitle').style.fontFamily = '"' + fam + '", Arial, sans-serif';
+    $('v9PreviewSubtitle').style.fontWeight = weight;
+    $('v9PreviewSubtitle').style.textShadow = shadow;
     overlay.style.left = (active.x_pct ?? 50) + '%';
     overlay.style.top = (active.y_pct ?? 50) + '%';
     overlay.style.right = 'auto';
     overlay.style.bottom = 'auto';
     overlay.style.width = '84%';
     overlay.style.transform = 'translate(-50%, -50%) scale(' + ((active.text_scale ?? 100) / 100) + ')';
-    const alpha = Math.max(0, Math.min(1, (active.box_opacity ?? 72) / 100));
-    overlay.style.background = 'rgba(22, 15, 44, ' + alpha.toFixed(2) + ')';
+    const alpha = Math.max(0, Math.min(1, (active.box_opacity ?? 78) / 100));
+    const bHex = (active.box_color || '#0f1b33').replace('#', '');
+    const br = parseInt(bHex.slice(0, 2), 16) || 15;
+    const bg = parseInt(bHex.slice(2, 4), 16) || 27;
+    const bb = parseInt(bHex.slice(4, 6), 16) || 51;
+    overlay.style.background = `rgba(${br}, ${bg}, ${bb}, ${alpha.toFixed(2)})`;
   }
   if (badgeEl) {
     const bText = active?.badge?.trim() || '';
@@ -292,14 +331,42 @@ $('v179CenterText')?.addEventListener('click', () => {
   v177SyncInputsToLayer();
 });
 
-// Direct drag & keyboard positioning on the preview overlay
+// Direct drag & keyboard positioning on the preview overlay with Center & Horizontal Snap Lines
+function v210UpdateVidSnapGuides(xSnap, ySnap) {
+  const frame = $('v9PreviewFrame');
+  if (!frame) return;
+  let gx = $('v210VidGuideX'), gy = $('v210VidGuideY');
+  if (!gx) {
+    gx = document.createElement('div');
+    gx.id = 'v210VidGuideX';
+    gx.style.cssText = 'position:absolute;top:0;bottom:0;width:2px;background:#f5c451;box-shadow:0 0 6px rgba(0,0,0,.85);pointer-events:none;z-index:25;';
+    frame.appendChild(gx);
+  }
+  if (!gy) {
+    gy = document.createElement('div');
+    gy.id = 'v210VidGuideY';
+    gy.style.cssText = 'position:absolute;left:0;right:0;height:2px;background:#f5c451;box-shadow:0 0 6px rgba(0,0,0,.85);pointer-events:none;z-index:25;';
+    frame.appendChild(gy);
+  }
+  gx.hidden = xSnap === null;
+  if (xSnap !== null) gx.style.left = xSnap + '%';
+  gy.hidden = ySnap === null;
+  if (ySnap !== null) gy.style.top = ySnap + '%';
+}
+
 const v177Overlay = $('v9PreviewOverlay');
 if (v177Overlay) {
   let dragging = false;
   const setFromEvent = ev => {
     const rect = $('v9PreviewFrame').getBoundingClientRect();
-    const x = Math.max(5, Math.min(95, Math.round(((ev.clientX - rect.left) / rect.width) * 100)));
-    const y = Math.max(5, Math.min(95, Math.round(((ev.clientY - rect.top) / rect.height) * 100)));
+    let x = Math.max(5, Math.min(95, Math.round(((ev.clientX - rect.left) / rect.width) * 100)));
+    let y = Math.max(5, Math.min(95, Math.round(((ev.clientY - rect.top) / rect.height) * 100)));
+    let snapX = null, snapY = null;
+    const xTargets = [50, ...v177State.layers.filter((_, i) => i !== v177State.activeIndex).map(l => l.x_pct ?? 50)];
+    const yTargets = [50, 25, 75, ...v177State.layers.filter((_, i) => i !== v177State.activeIndex).map(l => l.y_pct ?? 50)];
+    for (const tx of xTargets) { if (Math.abs(x - tx) <= 2) { x = tx; snapX = tx; break; } }
+    for (const ty of yTargets) { if (Math.abs(y - ty) <= 2) { y = ty; snapY = ty; break; } }
+    v210UpdateVidSnapGuides(snapX, snapY);
     if ($('v179X')) $('v179X').value = String(x);
     if ($('v179Y')) $('v179Y').value = String(y);
     v177SyncInputsToLayer();
@@ -310,7 +377,8 @@ if (v177Overlay) {
     setFromEvent(ev);
   });
   v177Overlay.addEventListener('pointermove', ev => { if (dragging) setFromEvent(ev); });
-  v177Overlay.addEventListener('pointerup', () => { dragging = false; });
+  v177Overlay.addEventListener('pointerup', () => { dragging = false; v210UpdateVidSnapGuides(null, null); });
+  v177Overlay.addEventListener('pointercancel', () => { dragging = false; v210UpdateVidSnapGuides(null, null); });
   v177Overlay.addEventListener('keydown', ev => {
     const step = ev.shiftKey ? 5 : 2;
     let x = Number($('v179X')?.value || 50), y = Number($('v179Y')?.value || 50);
