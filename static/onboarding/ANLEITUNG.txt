@@ -1,0 +1,12 @@
+Einrichtungsvideo für TimeSave Social (V21.1)
+
+Lege hier DEIN fertiges MP4 mit dem exakten Dateinamen "einrichtung.mp4" ab.
+Nach dem nächsten Deployment erkennt die App das Video automatisch, zeigt es
+in der Erste-Schritte-Anleitung und bietet den Download an.
+
+Wichtig: Dieses MP4 wird unter /static/onboarding/einrichtung.mp4 ÖFFENTLICH
+ausgeliefert. Zeige im Video niemals Zugangsdaten, Tokens, private E-Mails,
+Kundendaten oder geheime API-Schlüssel.
+
+Für große Dateien/späteren Betrieb: Video über eigenen Cloud-Speicher/CDN
+bereitstellen, statt es dauerhaft ins Git-Repository zu legen.

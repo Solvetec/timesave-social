@@ -348,6 +348,20 @@ def init_db():
             value TEXT NOT NULL,
             PRIMARY KEY(owner_id, key)
         );
+        -- V21.1: Only a future billing ledger scaffold. No payment or paywall active.
+        CREATE TABLE IF NOT EXISTS billing_subscriptions (
+            id TEXT PRIMARY KEY,
+            owner_id TEXT NOT NULL,
+            provider TEXT NOT NULL,
+            external_subscription_id TEXT NOT NULL,
+            plan_code TEXT NOT NULL,
+            status TEXT NOT NULL,
+            current_period_end TEXT,
+            updated_at TEXT NOT NULL
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_billing_external
+          ON billing_subscriptions(provider, external_subscription_id);
+        CREATE INDEX IF NOT EXISTS idx_billing_owner ON billing_subscriptions(owner_id, updated_at);
         ''')
         for tbl in ('media', 'jobs', 'designs', 'connections', 'oauth_states',
                     'storykit_done', 'meta_sessions', 'meta_detached', 'drafts'):
@@ -5483,6 +5497,56 @@ def auth_me(user: dict = Depends(current_user)):
         'role': user['role'],
         'auth_type': user['auth_type'],
         'db_backend': DB_BACKEND,
+    }
+
+
+# V21.1 – onboarding and subscription-model preparation.
+# Tutorial is intentionally a public, non-sensitive MP4 under static/onboarding/;
+# personal credentials/tokens must never be shown in this recording.
+ONBOARDING_VIDEO = ROOT / 'static' / 'onboarding' / 'einrichtung.mp4'
+ONBOARDING_PREF_KEY = 'onboarding_guide_v1'
+
+
+class OnboardingStatusUpdate(BaseModel):
+    completed: bool
+
+
+@app.get('/api/onboarding/status')
+def onboarding_status(user: dict = Depends(current_user)):
+    return {
+        'completed': get_user_pref(user['id'], ONBOARDING_PREF_KEY) == 'completed',
+        'video_url': '/static/onboarding/einrichtung.mp4' if ONBOARDING_VIDEO.is_file() else None,
+        'guide_version': 1,
+    }
+
+
+@app.put('/api/onboarding/status')
+def onboarding_update(req: OnboardingStatusUpdate, user: dict = Depends(current_user)):
+    save_user_pref(user['id'], ONBOARDING_PREF_KEY, 'completed' if req.completed else 'open')
+    return {'ok': True, 'completed': req.completed}
+
+
+# Draft offers, not for sale. Never infer paid access from these preview prices.
+BILLING_PREVIEW_PLANS = [
+    {'code': 'starter', 'name': 'Starter', 'monthly_eur': 12.90,
+     'description': 'Für Einzelpersonen mit wenigen Social-Media-Konten.'},
+    {'code': 'pro', 'name': 'Pro', 'monthly_eur': 24.90,
+     'description': 'Für regelmäßige Beiträge, Videos und Vorausplanung.'},
+    {'code': 'team', 'name': 'Team', 'monthly_eur': 49.90,
+     'description': 'Für Teams mit mehreren Arbeitsbereichen.'},
+]
+
+
+@app.get('/api/billing/overview')
+def billing_overview(user: dict = Depends(current_user)):
+    # There is deliberately no checkout, payment-provider integration, or paywall.
+    # A store-specific integration and verified payment webhooks must be added later.
+    return {
+        'billing_enabled': False,
+        'current_plan': 'Testbetrieb',
+        'subscription_status': 'not_configured',
+        'draft_plans': BILLING_PREVIEW_PLANS,
+        'currency': 'EUR',
     }
 
 
