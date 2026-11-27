@@ -1,0 +1,7 @@
+# V21.2 – PayPal Sandbox
+1. https://developer.paypal.com/dashboard/ öffnen, Sandbox REST-App erstellen. Client ID und Secret in Render Environment hinterlegen, niemals in GitHub.
+2. Sandbox Produkt und aktive monatliche EUR-Pläne ohne Testphase, Steuern oder Einrichtungsgebühren erstellen (Starter 12,90; Pro 24,90; Team 49,90). Unbegrenzte reguläre Monatszyklen. Plan-IDs in PAYPAL_PLAN_STARTER/PRO/TEAM speichern.
+3. PAYPAL_RETURN_BASE auf die HTTPS-Origin der App setzen (ohne Pfad). Webhook in derselben Sandbox-App auf https://DEINE-APP/api/billing/paypal/webhook registrieren. BILLING.SUBSCRIPTION.* Ereignisse und PAYMENT.SALE.COMPLETED, PAYMENT.SALE.REFUNDED, PAYMENT.SALE.REVERSED abonnieren. Webhook-ID in PAYPAL_WEBHOOK_ID speichern.
+4. PAYPAL_MODE=sandbox, BILLING_ENABLED=true setzen und deployen. Einstellungen → Tarife & Mitgliedschaft → Mit PayPal testen. Mit Sandbox-Käuferkonto anmelden, zurückkehren, Status aktualisieren. Kündigung im Sandbox-PayPal-Konto testen.
+
+Kein Live-Modus, keine Freischaltung, keine echten Zahlungen. Status ist nicht gleich Zahlungsnachweis. SQLite auf Render Free kann beim Deploy verloren gehen; vor Livebetrieb dauerhafte Datenbank, Zahlungsledger, Abgleich, Schutz gegen Doppelabos, Kündigung, Rückerstattungen, Inhaberrechte und Zugriffskontrolle implementieren. Keine automatische Tarifmigration. Nur Syntax geprüft; reale Sandbox-Integration noch nicht getestet.

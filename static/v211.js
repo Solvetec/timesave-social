@@ -68,6 +68,19 @@
     if (!root) return;
     const data = await api('/api/billing/overview');
     root.replaceChildren();
+    const status = document.createElement('p');
+    status.textContent = data.billing_enabled ? 'PayPal Sandbox aktiv – kein echtes Geld.' : 'PayPal Sandbox noch nicht eingerichtet.';
+    root.append(status);
+    for (const sub of data.subscriptions || []) {
+      const line = document.createElement('p');
+      line.textContent = sub.plan_code + ': ' + sub.status;
+      root.append(line);
+    }
+    if (data.billing_enabled && data.subscriptions?.length) {
+      const refresh = document.createElement('button'); refresh.type = 'button'; refresh.textContent = 'PayPal-Status aktualisieren';
+      refresh.onclick = async () => { refresh.disabled = true; try { await api('/api/billing/paypal/refresh',{method:'POST'}); await loadBilling(); } catch(e) { toast(e.message,true); } finally { refresh.disabled = false; } };
+      root.append(refresh);
+    }
     for (const plan of (data.draft_plans || [])) {
       const box = document.createElement('div');
       box.className = 'v211-plan';
@@ -80,6 +93,11 @@
       const p = document.createElement('p');
       p.textContent = plan.description;
       box.append(name,price,unit,p);
+      if (plan.checkout_ready) {
+        const btn = document.createElement('button'); btn.type = 'button'; btn.textContent = 'Mit PayPal testen';
+        btn.onclick = async () => { btn.disabled = true; try { const result = await api('/api/billing/paypal/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan_code:plan.code})}); location.assign(result.approval_url); } catch(e) { toast(e.message,true); btn.disabled = false; } };
+        box.append(btn);
+      }
       root.appendChild(box);
     }
   }

@@ -5537,17 +5537,8 @@ BILLING_PREVIEW_PLANS = [
 ]
 
 
-@app.get('/api/billing/overview')
-def billing_overview(user: dict = Depends(current_user)):
-    # There is deliberately no checkout, payment-provider integration, or paywall.
-    # A store-specific integration and verified payment webhooks must be added later.
-    return {
-        'billing_enabled': False,
-        'current_plan': 'Testbetrieb',
-        'subscription_status': 'not_configured',
-        'draft_plans': BILLING_PREVIEW_PLANS,
-        'currency': 'EUR',
-    }
+from app.paypal_billing import install as install_paypal_billing
+install_paypal_billing(app, current_user, dbconn, BILLING_PREVIEW_PLANS)
 
 
 @app.post('/api/auth/logout')
